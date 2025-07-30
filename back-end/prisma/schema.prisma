@@ -1,0 +1,104 @@
+// prisma.schema
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model for admin authentication
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Country model for managing countries
+model Country {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  cities    City[]   @relation("CountryCities")
+  sourcePackages Package[] @relation("SourceCountry")
+  destinationPackages Package[] @relation("DestinationCountry")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// City model for managing cities under each country
+model City {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  countryId   String   @db.ObjectId
+  country     Country  @relation("CountryCities", fields: [countryId], references: [id])
+  sourcePackages Package[] @relation("SourceCity")
+  destinationPackages Package[] @relation("DestinationCity")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@unique([name, countryId])
+}
+
+// Tour Package model
+model Package {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  title             String   @unique
+  sourceCountryId   String   @db.ObjectId
+  sourceCountry     Country  @relation("SourceCountry", fields: [sourceCountryId], references: [id])
+  sourceCityId      String   @db.ObjectId
+  sourceCity        City     @relation("SourceCity", fields: [sourceCityId], references: [id])
+  destinationCountryId String @db.ObjectId
+  destinationCountry Country  @relation("DestinationCountry", fields: [destinationCountryId], references: [id])
+  destinationCityId String   @db.ObjectId
+  destinationCity   City     @relation("DestinationCity", fields: [destinationCityId], references: [id])
+  description       String
+  terms             String
+  photos            String[]
+  schedules         Schedule[] @relation("PackageSchedules")
+  enquiries         Enquiry[]  @relation("PackageEnquiries")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Package Schedule model
+model Schedule {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  packageId       String   @db.ObjectId
+  package         Package  @relation("PackageSchedules", fields: [packageId], references: [id])
+  fromDate        DateTime
+  toDate          DateTime
+  amount          Float
+  description     String
+  photos          String[]
+  enquiries       Enquiry[] @relation("ScheduleEnquiries")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Enquiry model for customer enquiries
+model Enquiry {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String
+  phone       String
+  message     String
+  packageId   String?  @db.ObjectId
+  package     Package? @relation("PackageEnquiries", fields: [packageId], references: [id])
+  scheduleId  String?  @db.ObjectId
+  schedule    Schedule? @relation("ScheduleEnquiries", fields: [scheduleId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Banner model for home page carousel
+model Banner {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  imageUrl  String
+  altText   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

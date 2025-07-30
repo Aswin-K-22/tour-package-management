@@ -1,0 +1,46 @@
+# ========================
+# Node Modules (Backend + Frontend)
+# ========================
+**/node_modules/
+
+# ========================
+# Environment Variables
+# ========================
+**/.env
+**/.env.*
+!.env.example  # Optional: keep for demo structure
+
+# ========================
+# Logs
+# ========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# Build Output
+# ========================
+**/dist/
+**/build/
+
+# ========================
+# Prisma (for MongoDB Atlas)
+# ========================
+# KEEP schema.prisma (important!)
+# OPTIONAL: Ignore migration folders if not needed
+**/prisma/migrations/
+
+# ========================
+# Editor Config Files
+# ========================
+.vscode/
+.idea/
+*.code-workspace
+
+# ========================
+# OS-Specific Files
+# ========================
+.DS_Store
+Thumbs.db
