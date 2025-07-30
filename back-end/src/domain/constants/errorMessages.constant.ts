@@ -11,4 +11,5 @@ export const ERRORMESSAGES = {
   LOGIN_FAILED: 'Failed to login',
   INTERNAL_SERVER_ERROR: 'Internal server error',
   USER_NOT_FOUND: 'User not found',
+  ADMIN_NOT_AUTHENTICATED:'ADMIN_NOT_AUTHENTICATED'
 } as const;

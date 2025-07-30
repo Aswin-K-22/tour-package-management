@@ -27,8 +27,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const { countryRoutes,  authRoutes } = composeApp();
 
-app.use('/api/country', countryRoutes.router);
-app.use('/api/auth', authRoutes.router);
+app.use('/country', countryRoutes.router);
+app.use('/auth', authRoutes.router);
 
 
 // Error handling

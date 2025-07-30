@@ -14,16 +14,28 @@ import {
   User 
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
+import { logout } from '../../services/authApi';
+import { toast } from 'react-toastify';
 
 const AdminNavbar = () => {
-  const { user, isLoggedIn, logout } = useAuth();
+  const { user, isLoggedIn, logout: logoutContext } = useAuth(); 
   const navigate = useNavigate();
   const location = useLocation(); // Hook to get current URL
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/admin/login');
+ const handleLogout = async () => {
+    try {
+      await logout(); // Call the logout API
+      logoutContext(); // Clear auth context
+      toast.success('Logged out successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      navigate('/admin/auth'); // Redirect to auth page
+    } catch (error) {
+      console.error("Logout error:", error);
+      alert(`Logout failed: ${error.message}`);
+    }
   };
 
   const navItems = isLoggedIn ? [
@@ -96,7 +108,7 @@ const AdminNavbar = () => {
               </>
             ) : (
               <Link
-                to="/admin/login"
+                to="/admin/auth"
                 className="group flex items-center px-4 py-2 text-sm font-medium text-slate-300 hover:text-white bg-slate-700 hover:bg-blue-600 rounded-lg transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30"
                 aria-label="Login"
               >
@@ -169,7 +181,7 @@ const AdminNavbar = () => {
               </>
             ) : (
               <Link
-                to="/admin/login"
+                to="/admin/auth"
                 className="group w-full flex items-center px-3 py-2 text-base font-medium text-slate-300 hover:text-white hover:bg-blue-600 rounded-lg transition-all duration-200"
                 aria-label="Login"
               >

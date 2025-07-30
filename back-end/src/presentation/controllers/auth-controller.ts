@@ -37,8 +37,8 @@ export class AuthController  {
 
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const {  email, password } = req.body;
-      const result = await this.createUserUseCase.execute({  email, password });
+      const {  name , email, password } = req.body;
+      const result = await this.createUserUseCase.execute({ name, email, password });
 
         if (result.success && result.data) {
         await this.setAuthCookies(res, { email: result.data.email, id: result.data.id });
@@ -92,18 +92,26 @@ export class AuthController  {
     }
   }
 
-  async get(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.body?.admin;
-      const result = await this.getUserUseCase.execute(id);
-      this.sendResponse(res, result);
-    } catch (error) {
-      console.error('Error in AuthController.get:', error);
-     this.sendResponse(res, {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
+async get(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.admin) {
+      this.sendResponse(res, {
+        status: HttpStatus.UNAUTHORIZED,
         success: false,
-        message: ERRORMESSAGES.INTERNAL_SERVER_ERROR,
+        message: ERRORMESSAGES.ADMIN_NOT_AUTHENTICATED,
       });
+      return;
     }
+    const { id } = req.admin;
+    const result = await this.getUserUseCase.execute(id);
+    this.sendResponse(res, result);
+  } catch (error) {
+    console.error('Error in AuthController.get:', error);
+    this.sendResponse(res, {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: ERRORMESSAGES.INTERNAL_SERVER_ERROR,
+    });
   }
+}
 }

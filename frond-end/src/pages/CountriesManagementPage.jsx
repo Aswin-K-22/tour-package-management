@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { 
   Plus, 
   Edit, 
@@ -9,6 +10,7 @@ import {
   Globe,
   Search
 } from 'lucide-react';
+import { addCountry } from "../services/countriesApi"; 
 
 const CountriesManagement = () => {
   // Initial dummy data
@@ -24,23 +26,42 @@ const CountriesManagement = () => {
   const [editName, setEditName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState('');
 
   // Filter countries based on search term
   const filteredCountries = countries.filter(country =>
     country.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Add new country
-  const handleAddCountry = (e) => {
+  // Add new country with API integration and validation
+  const handleAddCountry = async (e) => {
     e.preventDefault();
-    if (newCountryName.trim()) {
-      const newCountry = {
-        id: Math.max(...countries.map(c => c.id)) + 1,
-        name: newCountryName.trim()
-      };
+    const trimmedName = newCountryName.trim();
+    
+    // Validate input
+    if (!trimmedName) {
+      setError('Country name cannot be empty or contain only spaces');
+      return;
+    }
+
+    try {
+      // Call API to add country
+      const newCountry = await addCountry(trimmedName);
       setCountries([...countries, newCountry]);
       setNewCountryName('');
+      setError('');
       console.log('Added country:', newCountry);
+      toast.success(`Country "${newCountry.name}" added successfully!`, {
+    position: "top-right",
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+  });
+    } catch (err) {
+      setError('Failed to add country. Please try again.');
+      console.error('Error adding country:', err);
     }
   };
 
@@ -48,26 +69,35 @@ const CountriesManagement = () => {
   const handleEditStart = (country) => {
     setEditingCountry(country.id);
     setEditName(country.name);
+    setError('');
   };
 
   // Save edit
   const handleEditSave = () => {
-    if (editName.trim()) {
-      setCountries(countries.map(country =>
-        country.id === editingCountry
-          ? { ...country, name: editName.trim() }
-          : country
-      ));
-      console.log('Updated country:', { id: editingCountry, name: editName.trim() });
-      setEditingCountry(null);
-      setEditName('');
+    const trimmedEditName = editName.trim();
+    
+    // Validate input
+    if (!trimmedEditName) {
+      setError('Country name cannot be empty or contain only spaces');
+      return;
     }
+
+    setCountries(countries.map(country =>
+      country.id === editingCountry
+        ? { ...country, name: trimmedEditName }
+        : country
+    ));
+    console.log('Updated country:', { id: editingCountry, name: trimmedEditName });
+    setEditingCountry(null);
+    setEditName('');
+    setError('');
   };
 
   // Cancel edit
   const handleEditCancel = () => {
     setEditingCountry(null);
     setEditName('');
+    setError('');
   };
 
   // Delete country
@@ -75,12 +105,12 @@ const CountriesManagement = () => {
     const countryToDelete = countries.find(c => c.id === id);
     setCountries(countries.filter(country => country.id !== id));
     setDeleteConfirm(null);
+    setError('');
     console.log('Deleted country:', countryToDelete);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -106,12 +136,20 @@ const CountriesManagement = () => {
                 id="countryName"
                 type="text"
                 value={newCountryName}
-                onChange={(e) => setNewCountryName(e.target.value)}
+                onChange={(e) => {
+                  setNewCountryName(e.target.value);
+                  setError('');
+                }}
                 placeholder="Enter country name..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                className={`w-full px-4 py-3 border ${error ? 'border-red-300' : 'border-gray-300'} rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400`}
                 aria-label="Country name input"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddCountry(e)}
               />
+              {error && (
+                <p className="mt-2 text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+              )}
             </div>
             <div className="flex items-end">
               <button
@@ -183,14 +221,24 @@ const CountriesManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {editingCountry === country.id ? (
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            aria-label="Edit country name"
-                            autoFocus
-                          />
+                          <div>
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={(e) => {
+                                setEditName(e.target.value);
+                                setError('');
+                              }}
+                              className={`w-full px-3 py-2 border ${error ? 'border-red-300' : 'border-blue-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                              aria-label="Edit country name"
+                              autoFocus
+                            />
+                            {error && (
+                              <p className="mt-2 text-sm text-red-600" role="alert">
+                                {error}
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-sm font-medium text-gray-900">
                             {country.name}

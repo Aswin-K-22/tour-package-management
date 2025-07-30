@@ -1,73 +1,148 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, MapPin, Plane, User, Mail, Lock } from "lucide-react";
+import { signup, login } from "../services/authApi"; 
+import useAuth from '../hooks/useAuth';
+import { toast } from 'react-toastify';
 
 const AdminAuthPage = () => {
+  const { user, isLoggedIn, login: loginContext } = useAuth();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
-    password: ""
+    password: "",
   });
+  const [errors, setErrors] = useState({ name: "", email: "", password: "" });
+
+  useEffect(() => {
+    if (isLoggedIn && user) {
+      navigate("/admin/dashboard");
+    }
+  }, [isLoggedIn, user, navigate]);
 
   const dummyData = {
     login: {
       email: "admin@example.com",
-      password: "password123"
+      password: "password123",
     },
     signup: {
-      fullName: "Admin User",
+      name: "Admin User",
       email: "newadmin@example.com",
-      password: "password123"
+      password: "password123",
+    },
+  };
+
+  const validateForm = () => {
+    const { name, email, password } = formData;
+    const newErrors = { name: "", email: "", password: "" };
+    let isValid = true;
+
+    if (isLogin) {
+      if (!email.trim()) {
+        newErrors.email = "Email cannot be empty or whitespace.";
+        isValid = false;
+      }
+      if (!password.trim()) {
+        newErrors.password = "Password cannot be empty or whitespace.";
+        isValid = false;
+      }
+    } else {
+      if (!name.trim()) {
+        newErrors.name = "Name cannot be empty or whitespace.";
+        isValid = false;
+      }
+      if (!email.trim()) {
+        newErrors.email = "Email cannot be empty or whitespace.";
+        isValid = false;
+      }
+      if (!password.trim()) {
+        newErrors.password = "Password cannot be empty or whitespace.";
+        isValid = false;
+      }
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email.trim() && !emailRegex.test(email)) {
+      newErrors.email = "Please enter a valid email address.";
+      isValid = false;
+    }
+
+    if (password.trim() && password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters long.";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLogin) {
-      console.log("Login Data:", {
-        email: formData.email,
-        password: formData.password
+
+    if (!validateForm()) return;
+
+    try {
+      if (isLogin) {
+        const userData = await login(formData.email, formData.password); // Use actual login API
+        loginContext(userData); // Update context with user data
+        console.log("Login Data:", {
+          email: formData.email,
+          password: formData.password,
+        });
+        console.log("Expected Login Data:", dummyData.login);
+       toast.success('Login successful!', {
+        position: 'top-right',
+        autoClose: 3000,
       });
-      console.log("Expected Login Data:", dummyData.login);
-    } else {
-      console.log("Signup Data:", {
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password
+      } else {
+        const userData = await signup(formData.name, formData.email, formData.password);
+        loginContext(userData); // Update context with user data
+        console.log("Signup Response:", userData);
+        console.log("Signup Data:", {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
+        console.log("Expected Signup Data:", dummyData.signup);
+         toast.success("Signup successful! Redirecting to dashboard...", {
+        position: 'top-right',
+        autoClose: 3000,
       });
-      console.log("Expected Signup Data:", dummyData.signup);
+      }
+    } catch (error) {
+      console.error("Error during submission:", error);
+     toast.error(`Error during ${isLogin ? "login" : "signup"}: ${error.message}`, {
+        position: 'top-right',
+        autoClose: 3000,
+      });
     }
-    
-    // Simulate API call
-    setTimeout(() => {
-      alert(`${isLogin ? 'Login' : 'Signup'} successful! Check console for data.`);
-    }, 500);
   };
 
   const toggleForm = () => {
     setIsLogin(!isLogin);
-    setFormData({ fullName: "", email: "", password: "" });
+    setFormData({ name: "", email: "", password: "" });
     setShowPassword(false);
+    setErrors({ name: "", email: "", password: "" });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse delay-500"></div>
       </div>
 
-      {/* Travel-themed background icons */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <Plane className="absolute top-20 left-20 w-6 h-6 text-white opacity-10 transform rotate-45" />
         <MapPin className="absolute top-40 right-32 w-5 h-5 text-white opacity-10" />
@@ -76,9 +151,7 @@ const AdminAuthPage = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Main Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
-          {/* Header */}
           <div className="px-8 pt-8 pb-6 text-center">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-full">
@@ -93,7 +166,6 @@ const AdminAuthPage = () => {
             </p>
           </div>
 
-          {/* Toggle Buttons */}
           <div className="px-8 mb-6">
             <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
               <button
@@ -121,10 +193,8 @@ const AdminAuthPage = () => {
             </div>
           </div>
 
-          {/* Form Container */}
           <div className="px-8 pb-8">
             <div className="space-y-5">
-              {/* Signup Only - Full Name */}
               <div
                 className={`transform transition-all duration-300 ${
                   isLogin
@@ -139,19 +209,23 @@ const AdminAuthPage = () => {
                     </div>
                     <input
                       type="text"
-                      name="fullName"
-                      value={formData.fullName}
+                      name="name"
+                      value={formData.name}
                       onChange={handleInputChange}
                       placeholder="Full Name"
                       required={!isLogin}
-                      className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/10"
+                      className={`w-full pl-10 pr-4 py-3 bg-white/5 border ${
+                        errors.name ? "border-red-500" : "border-white/20"
+                      } rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/10`}
                       aria-label="Full Name"
                     />
+                    {errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Email */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-blue-300" />
@@ -163,12 +237,16 @@ const AdminAuthPage = () => {
                   onChange={handleInputChange}
                   placeholder="Email Address"
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/10"
+                  className={`w-full pl-10 pr-4 py-3 bg-white/5 border ${
+                    errors.email ? "border-red-500" : "border-white/20"
+                  } rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/10`}
                   aria-label="Email Address"
                 />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
               </div>
 
-              {/* Password */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-blue-300" />
@@ -180,7 +258,9 @@ const AdminAuthPage = () => {
                   onChange={handleInputChange}
                   placeholder="Password"
                   required
-                  className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/10"
+                  className={`w-full pl-10 pr-12 py-3 bg-white/5 border ${
+                    errors.password ? "border-red-500" : "border-white/20"
+                  } rounded-lg text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:bg-white/10`}
                   aria-label="Password"
                 />
                 <button
@@ -195,9 +275,11 @@ const AdminAuthPage = () => {
                     <Eye className="h-5 w-5" />
                   )}
                 </button>
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
 
-              {/* Submit Button */}
               <button
                 onClick={handleSubmit}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent"
@@ -207,7 +289,6 @@ const AdminAuthPage = () => {
               </button>
             </div>
 
-            {/* Toggle Link */}
             <div className="mt-6 text-center">
               <button
                 onClick={toggleForm}
@@ -224,7 +305,6 @@ const AdminAuthPage = () => {
               </button>
             </div>
 
-            {/* Demo Data Info */}
             <div className="mt-6 p-3 bg-white/5 rounded-lg border border-white/10">
               <p className="text-xs text-blue-200 text-center mb-2 font-medium">
                 Demo Credentials:
@@ -239,7 +319,6 @@ const AdminAuthPage = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-blue-200 text-xs">
             © 2024 Tour Package Management System

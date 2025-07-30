@@ -20,6 +20,6 @@ export class AuthRoutes {
     this.router.post('/create', this.authController.create.bind(this.authController));
     this.router.post('/login', this.authController.login.bind(this.authController));
     this.router.post('/logout', this.authMiddleware.adminAuth.bind(this.authMiddleware), this.authController.logout.bind(this.authController));
-    this.router.get('/get/:userId', this.authMiddleware.adminAuth.bind(this.authMiddleware), this.authController.get.bind(this.authController));
+    this.router.get('/get', this.authMiddleware.adminAuth.bind(this.authMiddleware), this.authController.get.bind(this.authController));
   }
 }

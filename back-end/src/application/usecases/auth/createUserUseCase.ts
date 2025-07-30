@@ -14,6 +14,7 @@ export class CreateUserUseCase  {
   ) {}
 
   async execute(data: {
+    name : string;
     email: string;
     password: string;
   }): Promise<IResponseDTO<User>> {

@@ -1,12 +1,10 @@
 
 import './App.css'
 import useAuth from './hooks/useAuth';
-import {getAdminData } from './services/authApi'
+import {getAuth } from './services/authApi'
 import { useEffect } from "react";
 import AdminLayout from './components/admin/AdminLayout';
 import UserLayout from './components/user/UserLayout';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import PackagesListPage from './pages/TourPackageList';
@@ -20,13 +18,14 @@ import PackageSchedulesManagement from './pages/SheduleManagement';
 import EnquiriesManagement from './pages/EnquiresManagement';
 import AdminAuthPage from './pages/AdminAuthPage';
 import BannerManagement from './pages/BannerManagement';
-
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
 
 function App() {
     const { login } = useAuth();
      useEffect(() => {
   const fetchAdmin = async () => {
-    const data = await getAdminData(); 
+    const data = await getAuth(); 
 console.log('admin auth',data)
     if (data) {
       login(data);
@@ -61,10 +60,20 @@ console.log('admin auth',data)
            <Route path="banners" element={< BannerManagement/>} />
         </Route>
       </Routes>
-    
-     
+    <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
-  )
+  );
 }
 
-export default App
+export default App;

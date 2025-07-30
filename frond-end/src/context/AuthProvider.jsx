@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { AuthContext } from './AuthContext';
 
 const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState({id:'ahsdasi',name:'Admin',email:'admin@gmail.com'});
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const login = (userData) => {
     setUser(userData);
