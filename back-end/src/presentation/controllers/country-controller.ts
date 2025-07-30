@@ -6,6 +6,7 @@ import { ICreateCountryUseCase } from '@/domain/usecases/country/ICreateCountryU
 import { GetAllCountriesUseCase } from '@/application/usecases/country/GetAllCountriesUseCase';
 import { UpdateCountryUseCase } from '@/application/usecases/country/UpdateCountryUseCase';
 import { DeleteCountryUseCase } from '@/application/usecases/country/DeleteCountryUseCase';
+import { GetAllCountriesAlphabeticalUseCase } from '@/application/usecases/country/GetAllCountriesAlphabeticalUseCase';
 
 
 
@@ -15,6 +16,7 @@ export class CountryController {
   private getAllCountriesUseCase: GetAllCountriesUseCase,
     private updateCountryUseCase: UpdateCountryUseCase,
     private deleteCountryUseCase: DeleteCountryUseCase,
+    private getAllCountriesAlphabeticalUseCase : GetAllCountriesAlphabeticalUseCase,
   ) {}
 
 
@@ -88,4 +90,20 @@ async getAll(req: Request, res: Response) {
       });
     }
   }
+
+
+  async getAllAlpha(req: Request, res: Response) {
+  try {
+    const result = await this.getAllCountriesAlphabeticalUseCase.execute();
+    this.sendResponse(res, result);
+  } catch (error) {
+    console.error('Error in CountryController.getAllAlpha:', error);
+    this.sendResponse(res, {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+}
+
 }

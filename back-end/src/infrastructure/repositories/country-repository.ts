@@ -38,4 +38,16 @@ async getAll(page: number, limit: number): Promise<{
   });
 }
 
+
+async getAllAlphabetical(): Promise<Country[]> {
+  const rows = await this.prisma.country.findMany({
+    orderBy: { name: 'asc' },
+  });
+
+  return rows.map((row) => ({
+    ...row,
+    id: row.id, 
+  }));
+}
+
 }

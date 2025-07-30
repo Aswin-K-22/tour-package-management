@@ -18,7 +18,7 @@ const CountriesManagementPage = () => {
   const [editingCountry, setEditingCountry] = useState(null);
   const [editName, setEditName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [successConfirm, setSuccessConfirm] = useState(null); // For success dialogs (Edit/Delete only)
+  const [successConfirm, setSuccessConfirm] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +43,14 @@ const CountriesManagementPage = () => {
     } catch (err) {
       setError('Failed to fetch countries. Please try again.');
       console.error('Error fetching countries:', err);
+      toast.error('Failed to fetch countries. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -66,14 +74,12 @@ const CountriesManagementPage = () => {
     setIsLoading(true);
     try {
       const newCountry = await addCountry(trimmedName);
-      setCountries(prev => [...prev, newCountry]); // Append new country to state
+      setCountries(prev => [...prev, newCountry]);
       setNewCountryName('');
       setError('');
-      // Update total pages based on new count
       const newTotalItems = countries.length + 1;
       const newTotalPages = Math.ceil(newTotalItems / itemsPerPage);
       setTotalPages(newTotalPages);
-      // Adjust current page if necessary
       const currentItemsOnPage = filteredCountries.length % itemsPerPage;
       if (currentItemsOnPage === 0 && currentPage < newTotalPages) {
         setCurrentPage(newTotalPages);
@@ -89,6 +95,14 @@ const CountriesManagementPage = () => {
     } catch (err) {
       setError('Failed to add country. Please try again.');
       console.error('Error adding country:', err);
+      toast.error('Failed to add country. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +127,7 @@ const CountriesManagementPage = () => {
     setIsLoading(true);
     try {
       await editCountry(editingCountry, trimmedEditName);
-      await fetchCountries(currentPage); // Refresh current page
+      await fetchCountries(currentPage);
       setEditingCountry(null);
       setEditName('');
       setError('');
@@ -121,6 +135,14 @@ const CountriesManagementPage = () => {
     } catch (err) {
       setError('Failed to update country. Please try again.');
       console.error('Error updating country:', err);
+      toast.error('Failed to update country. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +166,17 @@ const CountriesManagementPage = () => {
       setError('');
       setSuccessConfirm(`Successfully deleted country "${countryToDelete.name}"`);
     } catch (err) {
-      setError('Failed to delete country. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to delete country. Please try again.';
+      setError(errorMessage);
+      setDeleteConfirm(null);
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       console.error('Error deleting country:', err);
     } finally {
       setIsLoading(false);
@@ -393,7 +425,10 @@ const CountriesManagementPage = () => {
               </p>
               <div className="flex space-x-4">
                 <button
-                  onClick={() => setDeleteConfirm(null)}
+                  onClick={() => {
+                    setDeleteConfirm(null);
+                    setError('');
+                  }}
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Cancel deletion"
                   disabled={isLoading}

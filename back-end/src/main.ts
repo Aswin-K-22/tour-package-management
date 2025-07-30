@@ -25,10 +25,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
-const { countryRoutes,  authRoutes } = composeApp();
+const { countryRoutes,  authRoutes,cityRoutes} = composeApp();
 
 app.use('/country', countryRoutes.router);
 app.use('/auth', authRoutes.router);
+app.use('/city', cityRoutes.router);
+
 
 
 // Error handling

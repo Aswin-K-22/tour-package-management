@@ -10,5 +10,7 @@ export interface ICountryRepository extends IBaseRepository<Country, string> {
   }>;
 
   findByName(name: string): Promise<Country | null>;
+  getAllAlphabetical(): Promise<Country[]>;
+
 
 }

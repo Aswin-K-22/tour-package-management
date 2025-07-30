@@ -12,4 +12,8 @@ export const MESSAGES = {
   COUNTRY_FETCHED: 'Countries fetched successfully',
   COUNTRY_UPDATED: 'Country updated successfully',
   COUNTRY_DELETED: 'Country deleted successfully',
+
+    CITY_ADDED: 'City created successfully',
+  CITY_UPDATED: 'City updated successfully',
+  CITY_DELETED: 'City deleted successfully',
 } as const;

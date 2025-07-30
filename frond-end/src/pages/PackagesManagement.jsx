@@ -1,66 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { Edit, Trash2, Eye, Plus, X, MapPin, Globe, Camera, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Edit, Trash2, Plus, X, MapPin, Globe, Camera, AlertTriangle } from 'lucide-react';
+import { addTourPackage, getTourPackages, editTourPackage, deleteTourPackage } from '../services/tourPackageApi'
+import { findAllCountriesWithAlphaOrder } from '../services/countriesApi';
+import { getCitiesByCountryId } from '../services/citiesApi';
 
 const TourPackagesManagement = () => {
-  // Dummy data
-  const [countries] = useState([
-    { id: 1, name: "India" },
-    { id: 2, name: "Malaysia" },
-    { id: 3, name: "Singapore" }
-  ]);
-
-  const [cities] = useState([
-    { id: 1, name: "Kerala", countryId: 1 },
-    { id: 2, name: "Mumbai", countryId: 1 },
-    { id: 3, name: "Kuala Lumpur", countryId: 2 },
-    { id: 4, name: "Singapore City", countryId: 3 }
-  ]);
-
-  const [packages, setPackages] = useState([
-    {
-      id: 1,
-      title: "Kerala to Malaysia 4 Days 3 Nights",
-      sourceCountryId: 1,
-      sourceCountryName: "India",
-      sourceCityId: 1,
-      sourceCityName: "Kerala",
-      destinationCountryId: 2,
-      destinationCountryName: "Malaysia",
-      destinationCityId: 3,
-      destinationCityName: "Kuala Lumpur",
-      description: "Explore vibrant Malaysia with guided tours and beach visits.",
-      termsAndConditions: [
-        "Valid passport required.",
-        "50% payment at booking."
-      ],
-      photos: [
-        "https://images.unsplash.com/photo-1514282401047-d79a71fac224?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-      ]
-    },
-    {
-      id: 2,
-      title: "Mumbai to Singapore City Tour",
-      sourceCountryId: 1,
-      sourceCountryName: "India",
-      sourceCityId: 2,
-      sourceCityName: "Mumbai",
-      destinationCountryId: 3,
-      destinationCountryName: "Singapore",
-      destinationCityId: 4,
-      destinationCityName: "Singapore City",
-      description: "Discover the futuristic cityscape of Singapore.",
-      termsAndConditions: [
-        "Travel insurance recommended.",
-        "Cancellations within 7 days non-refunded."
-      ],
-      photos: [
-        "https://images.unsplash.com/photo-1515036551092-39b3e1fa4627?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-      ]
-    }
-  ]);
-
-  // Form state
+  // State
+  const [countries, setCountries] = useState([]);
+  const [sourceCities, setSourceCities] = useState([]);
+  const [destinationCities, setDestinationCities] = useState([]);
+  const [packages, setPackages] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     sourceCountryId: '',
@@ -70,17 +19,85 @@ const TourPackagesManagement = () => {
     description: '',
     termsAndConditions: ['']
   });
-
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Filter cities based on selected country
-  const getFilteredCities = (countryId) => {
-    return cities.filter(city => city.countryId === parseInt(countryId));
+  // Fetch countries and packages on mount
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      const [countriesData, packagesData] = await Promise.all([
+        findAllCountriesWithAlphaOrder(),
+        getTourPackages(1, 1000)
+      ]);
+      setCountries(countriesData);
+      setPackages(packagesData.packages);
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      setErrors({ fetch: 'Failed to load initial data. Please try again.' });
+    }
+    setLoading(false);
+  };
+
+  // Fetch cities when country changes
+  useEffect(() => {
+    if (formData.sourceCountryId) {
+      fetchCities(formData.sourceCountryId, 'source');
+    } else {
+      setSourceCities([]);
+      setFormData(prev => ({ ...prev, sourceCityId: '' }));
+    }
+  }, [formData.sourceCountryId]);
+
+  useEffect(() => {
+    if (formData.destinationCountryId) {
+      fetchCities(formData.destinationCountryId, 'destination');
+    } else {
+      setDestinationCities([]);
+      setFormData(prev => ({ ...prev, destinationCityId: '' }));
+    }
+  }, [formData.destinationCountryId]);
+
+  const fetchCities = async (countryId, type) => {
+    setLoading(true);
+    try {
+      const cities = await getCitiesByCountryId(countryId);
+      if (type === 'source') {
+        setSourceCities(cities);
+      } else {
+        setDestinationCities(cities);
+      }
+    } catch (error) {
+      console.error(`Error fetching ${type} cities:`, error);
+      setErrors(prev => ({ ...prev, [`${type}Cities`]: `Failed to load ${type} cities.` }));
+    }
+    setLoading(false);
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = 'Package title is required';
+    if (!formData.sourceCountryId) newErrors.sourceCountryId = 'Source country is required';
+    if (!formData.sourceCityId) newErrors.sourceCityId = 'Source city is required';
+    if (!formData.destinationCountryId) newErrors.destinationCountryId = 'Destination country is required';
+    if (!formData.destinationCityId) newErrors.destinationCityId = 'Destination city is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.termsAndConditions.some(term => term.trim())) {
+      newErrors.termsAndConditions = 'At least one valid term is required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // Handle form input changes
@@ -90,13 +107,16 @@ const TourPackagesManagement = () => {
       ...prev,
       [name]: value
     }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
 
     // Reset city when country changes
     if (name === 'sourceCountryId') {
       setFormData(prev => ({ ...prev, sourceCityId: '' }));
+      setErrors(prev => ({ ...prev, sourceCityId: '' }));
     }
     if (name === 'destinationCountryId') {
       setFormData(prev => ({ ...prev, destinationCityId: '' }));
+      setErrors(prev => ({ ...prev, destinationCityId: '' }));
     }
   };
 
@@ -105,6 +125,7 @@ const TourPackagesManagement = () => {
     const newTerms = [...formData.termsAndConditions];
     newTerms[index] = value;
     setFormData(prev => ({ ...prev, termsAndConditions: newTerms }));
+    setErrors(prev => ({ ...prev, termsAndConditions: '' }));
   };
 
   const addTerm = () => {
@@ -123,8 +144,6 @@ const TourPackagesManagement = () => {
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     setSelectedPhotos(files);
-
-    // Create preview URLs
     const previewUrls = files.map(file => URL.createObjectURL(file));
     setPhotoPreviewUrls(previewUrls);
   };
@@ -149,70 +168,101 @@ const TourPackagesManagement = () => {
     });
     setSelectedPhotos([]);
     setPhotoPreviewUrls([]);
+    setSourceCities([]);
+    setDestinationCities([]);
+    setErrors({});
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const sourceCountry = countries.find(c => c.id === parseInt(formData.sourceCountryId));
-    const sourceCity = cities.find(c => c.id === parseInt(formData.sourceCityId));
-    const destCountry = countries.find(c => c.id === parseInt(formData.destinationCountryId));
-    const destCity = cities.find(c => c.id === parseInt(formData.destinationCityId));
+    if (!validateForm()) return;
 
-    const packageData = {
-      id: editingPackage ? editingPackage.id : packages.length + 1,
-      title: formData.title,
-      sourceCountryId: parseInt(formData.sourceCountryId),
-      sourceCountryName: sourceCountry?.name,
-      sourceCityId: parseInt(formData.sourceCityId),
-      sourceCityName: sourceCity?.name,
-      destinationCountryId: parseInt(formData.destinationCountryId),
-      destinationCountryName: destCountry?.name,
-      destinationCityId: parseInt(formData.destinationCityId),
-      destinationCityName: destCity?.name,
-      description: formData.description,
-      termsAndConditions: formData.termsAndConditions.filter(term => term.trim()),
-      photos: photoPreviewUrls.length > 0 ? photoPreviewUrls : editingPackage?.photos || []
-    };
+    setLoading(true);
+    try {
+      const sourceCountry = countries.find(c => c.id === parseInt(formData.sourceCountryId));
+      const sourceCity = sourceCities.find(c => c.id === parseInt(formData.sourceCityId));
+      const destCountry = countries.find(c => c.id === parseInt(formData.destinationCountryId));
+      const destCity = destinationCities.find(c => c.id === parseInt(formData.destinationCityId));
 
-    if (editingPackage) {
-      setPackages(prev => prev.map(pkg => pkg.id === editingPackage.id ? packageData : pkg));
-      console.log('Package updated:', packageData);
-    } else {
-      setPackages(prev => [...prev, packageData]);
-      console.log('Package added:', packageData);
+      const packageData = {
+        title: formData.title,
+        sourceCountryId: parseInt(formData.sourceCountryId),
+        sourceCountryName: sourceCountry?.name,
+        sourceCityId: parseInt(formData.sourceCityId),
+        sourceCityName: sourceCity?.name,
+        destinationCountryId: parseInt(formData.destinationCountryId),
+        destinationCountryName: destCountry?.name,
+        destinationCityId: parseInt(formData.destinationCityId),
+        destinationCityName: destCity?.name,
+        description: formData.description,
+        termsAndConditions: formData.termsAndConditions.filter(term => term.trim()),
+        photos: photoPreviewUrls.length > 0 ? photoPreviewUrls : editingPackage?.photos || []
+      };
+
+      if (editingPackage) {
+        await editTourPackage(editingPackage.id, packageData);
+        setPackages(prev => prev.map(pkg => pkg.id === editingPackage.id ? { ...editingPackage, ...packageData } : pkg));
+      } else {
+        const newPackage = await addTourPackage(packageData);
+        setPackages(prev => [...prev, newPackage]);
+      }
+
+      resetForm();
+      setShowAddForm(false);
+      setEditingPackage(null);
+    } catch (error) {
+      console.error('Error submitting package:', error);
+      setErrors({ submit: 'Failed to save package. Please try again.' });
     }
-
-    resetForm();
-    setShowAddForm(false);
-    setEditingPackage(null);
+    setLoading(false);
   };
 
   // Handle edit
-  const handleEdit = (pkg) => {
-    setFormData({
-      title: pkg.title,
-      sourceCountryId: pkg.sourceCountryId.toString(),
-      sourceCityId: pkg.sourceCityId.toString(),
-      destinationCountryId: pkg.destinationCountryId.toString(),
-      destinationCityId: pkg.destinationCityId.toString(),
-      description: pkg.description,
-      termsAndConditions: pkg.termsAndConditions.length > 0 ? pkg.termsAndConditions : ['']
-    });
-    setPhotoPreviewUrls(pkg.photos || []);
-    setEditingPackage(pkg);
-    setShowAddForm(true);
+  const handleEdit = async (pkg) => {
+    setLoading(true);
+    try {
+      const [sourceCitiesData, destCitiesData] = await Promise.all([
+        getCitiesByCountryId(pkg.sourceCountryId),
+        getCitiesByCountryId(pkg.destinationCountryId)
+      ]);
+      setSourceCities(sourceCitiesData);
+      setDestinationCities(destCitiesData);
+      setFormData({
+        title: pkg.title,
+        sourceCountryId: pkg.sourceCountryId.toString(),
+        sourceCityId: pkg.sourceCityId.toString(),
+        destinationCountryId: pkg.destinationCountryId.toString(),
+        destinationCityId: pkg.destinationCityId.toString(),
+        description: pkg.description,
+        termsAndConditions: pkg.termsAndConditions.length > 0 ? pkg.termsAndConditions : ['']
+      });
+      setPhotoPreviewUrls(pkg.photos || []);
+      setEditingPackage(pkg);
+      setShowAddForm(true);
+      setErrors({});
+    } catch (error) {
+      console.error('Error loading cities for edit:', error);
+      setErrors({ edit: 'Failed to load city data for editing.' });
+    }
+    setLoading(false);
   };
 
   // Handle delete
-  const handleDelete = (id) => {
-    setPackages(prev => prev.filter(pkg => pkg.id !== id));
-    setDeleteConfirm(null);
-    console.log('Package deleted:', id);
+  const handleDelete = async (id) => {
+    setLoading(true);
+    try {
+      await deleteTourPackage(id);
+      setPackages(prev => prev.filter(pkg => pkg.id !== id));
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      setErrors({ delete: 'Failed to delete package. Please try again.' });
+    }
+    setLoading(false);
   };
 
   return (
@@ -233,7 +283,8 @@ const TourPackagesManagement = () => {
                 setEditingPackage(null);
                 setShowAddForm(!showAddForm);
               }}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              disabled={loading}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Add new package"
             >
               <Plus className="w-5 h-5" />
@@ -275,10 +326,11 @@ const TourPackagesManagement = () => {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter package title"
+                    disabled={loading}
                   />
+                  {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
                 </div>
 
                 {/* Source Location */}
@@ -293,14 +345,15 @@ const TourPackagesManagement = () => {
                       name="sourceCountryId"
                       value={formData.sourceCountryId}
                       onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.sourceCountryId ? 'border-red-500' : 'border-gray-300'}`}
+                      disabled={loading}
                     >
                       <option value="">Select Country</option>
                       {countries.map(country => (
                         <option key={country.id} value={country.id}>{country.name}</option>
                       ))}
                     </select>
+                    {errors.sourceCountryId && <p className="mt-1 text-sm text-red-500">{errors.sourceCountryId}</p>}
                   </div>
                   <div>
                     <label htmlFor="sourceCityId" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -312,15 +365,16 @@ const TourPackagesManagement = () => {
                       name="sourceCityId"
                       value={formData.sourceCityId}
                       onChange={handleInputChange}
-                      required
-                      disabled={!formData.sourceCountryId}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                      disabled={!formData.sourceCountryId || loading}
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 ${errors.sourceCityId ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="">Select City</option>
-                      {getFilteredCities(formData.sourceCountryId).map(city => (
+                      {sourceCities.map(city => (
                         <option key={city.id} value={city.id}>{city.name}</option>
                       ))}
                     </select>
+                    {errors.sourceCityId && <p className="mt-1 text-sm text-red-500">{errors.sourceCityId}</p>}
+                    {errors.sourceCities && <p className="mt-1 text-sm text-red-500">{errors.sourceCities}</p>}
                   </div>
                 </div>
 
@@ -336,14 +390,15 @@ const TourPackagesManagement = () => {
                       name="destinationCountryId"
                       value={formData.destinationCountryId}
                       onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.destinationCountryId ? 'border-red-500' : 'border-gray-300'}`}
+                      disabled={loading}
                     >
                       <option value="">Select Country</option>
                       {countries.map(country => (
                         <option key={country.id} value={country.id}>{country.name}</option>
                       ))}
                     </select>
+                    {errors.destinationCountryId && <p className="mt-1 text-sm text-red-500">{errors.destinationCountryId}</p>}
                   </div>
                   <div>
                     <label htmlFor="destinationCityId" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -355,15 +410,16 @@ const TourPackagesManagement = () => {
                       name="destinationCityId"
                       value={formData.destinationCityId}
                       onChange={handleInputChange}
-                      required
-                      disabled={!formData.destinationCountryId}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100"
+                      disabled={!formData.destinationCountryId || loading}
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 ${errors.destinationCityId ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="">Select City</option>
-                      {getFilteredCities(formData.destinationCountryId).map(city => (
+                      {destinationCities.map(city => (
                         <option key={city.id} value={city.id}>{city.name}</option>
                       ))}
                     </select>
+                    {errors.destinationCityId && <p className="mt-1 text-sm text-red-500">{errors.destinationCityId}</p>}
+                    {errors.destinationCities && <p className="mt-1 text-sm text-red-500">{errors.destinationCities}</p>}
                   </div>
                 </div>
 
@@ -377,11 +433,12 @@ const TourPackagesManagement = () => {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    required
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Describe the tour package..."
+                    disabled={loading}
                   />
+                  {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
                 </div>
 
                 {/* Terms and Conditions */}
@@ -396,8 +453,9 @@ const TourPackagesManagement = () => {
                           type="text"
                           value={term}
                           onChange={(e) => handleTermChange(index, e.target.value)}
-                          className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          className={`flex-1 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.termsAndConditions ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder={`Term ${index + 1}`}
+                          disabled={loading}
                         />
                         {formData.termsAndConditions.length > 1 && (
                           <button
@@ -405,16 +463,19 @@ const TourPackagesManagement = () => {
                             onClick={() => removeTerm(index)}
                             className="px-3 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                             aria-label={`Remove term ${index + 1}`}
+                            disabled={loading}
                           >
                             <X className="w-5 h-5" />
                           </button>
                         )}
                       </div>
                     ))}
+                    {errors.termsAndConditions && <p className="mt-1 text-sm text-red-500">{errors.termsAndConditions}</p>}
                     <button
                       type="button"
                       onClick={addTerm}
                       className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      disabled={loading}
                     >
                       + Add Another Term
                     </button>
@@ -434,9 +495,8 @@ const TourPackagesManagement = () => {
                     accept="image/*"
                     onChange={handlePhotoUpload}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    disabled={loading}
                   />
-                  
-                  {/* Photo Preview */}
                   {photoPreviewUrls.length > 0 && (
                     <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                       {photoPreviewUrls.map((url, index) => (
@@ -451,6 +511,7 @@ const TourPackagesManagement = () => {
                             onClick={() => removePhoto(index)}
                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label={`Remove photo ${index + 1}`}
+                            disabled={loading}
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -460,13 +521,19 @@ const TourPackagesManagement = () => {
                   )}
                 </div>
 
+                {/* Error Message */}
+                {errors.submit && (
+                  <div className="text-red-500 text-sm">{errors.submit}</div>
+                )}
+
                 {/* Submit Button */}
                 <div className="flex gap-4 pt-4">
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-xl hover:from-green-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading}
                   >
-                    {editingPackage ? 'Update Package' : 'Add Package'}
+                    {loading ? 'Processing...' : editingPackage ? 'Update Package' : 'Add Package'}
                   </button>
                   <button
                     type="button"
@@ -475,7 +542,8 @@ const TourPackagesManagement = () => {
                       setEditingPackage(null);
                       resetForm();
                     }}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading}
                   >
                     Cancel
                   </button>
@@ -491,7 +559,11 @@ const TourPackagesManagement = () => {
             <h2 className="text-2xl font-bold text-gray-800">Tour Packages ({packages.length})</h2>
           </div>
 
-          {packages.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center">
+              <p className="text-gray-600">Loading packages...</p>
+            </div>
+          ) : packages.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <MapPin className="w-8 h-8 text-gray-400" />
@@ -555,6 +627,7 @@ const TourPackagesManagement = () => {
                             onClick={() => handleEdit(pkg)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                             aria-label={`Edit package ${pkg.title}`}
+                            disabled={loading}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -562,6 +635,7 @@ const TourPackagesManagement = () => {
                             onClick={() => setDeleteConfirm(pkg)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                             aria-label={`Delete package ${pkg.title}`}
+                            disabled={loading}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -594,13 +668,15 @@ const TourPackagesManagement = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleDelete(deleteConfirm.id)}
-                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-xl hover:bg-red-700 transition-colors duration-200 font-medium"
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-xl hover:bg-red-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
                 >
-                  Delete
+                  {loading ? 'Deleting...' : 'Delete'}
                 </button>
                 <button
                   onClick={() => setDeleteConfirm(null)}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-xl hover:bg-gray-300 transition-colors duration-200 font-medium"
+                  disabled={loading}
                 >
                   Cancel
                 </button>

@@ -1,4 +1,4 @@
-// File: src/api/tourApi.js
+// File: src/service/countryApi.js
 import axios from 'axios';
 
 const apiClient = axios.create({
@@ -27,4 +27,9 @@ export const editCountry = async (id, name) => {
 export const deleteCountry = async (id) => {
   const response = await apiClient.delete(`/${id}`);
   return response.data.data;
+};
+
+export const findAllCountriesWithAlphaOrder = async () => {
+  const response = await apiClient.get('/countries/alpha');
+  return response.data.data; 
 };

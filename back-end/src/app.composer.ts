@@ -2,8 +2,15 @@
 import { CreateUserUseCase } from "./application/usecases/auth/createUserUseCase";
 import { GetUserUseCase } from "./application/usecases/auth/getUserUseCase";
 import { LoginUserUseCase } from "./application/usecases/auth/loginUserUseCase";
+import { CreateCityUseCase } from "./application/usecases/city/CreateCityUseCase";
+import { DeleteCityUseCase } from "./application/usecases/city/DeleteCityUseCase";
+import { GetAllCitiesAlphabeticalUseCase } from "./application/usecases/city/GetAllCitiesAlphabeticalUseCase";
+import { GetAllCitiesUseCase } from "./application/usecases/city/GetAllCitiesUseCase";
+import { GetCitiesByCountryIdUseCase } from "./application/usecases/city/GetCitiesByCountryIdUseCase";
+import { UpdateCityUseCase } from "./application/usecases/city/UpdateCityUseCase";
 import { CreateCountryUseCase } from "./application/usecases/country/CreateCountryUseCase";
 import { DeleteCountryUseCase } from "./application/usecases/country/DeleteCountryUseCase";
+import { GetAllCountriesAlphabeticalUseCase } from "./application/usecases/country/GetAllCountriesAlphabeticalUseCase";
 import { GetAllCountriesUseCase } from "./application/usecases/country/GetAllCountriesUseCase";
 import { UpdateCountryUseCase } from "./application/usecases/country/UpdateCountryUseCase";
 import prisma from "./infrastructure/database/prisma-client";
@@ -17,9 +24,11 @@ import { ScheduleRepository } from "./infrastructure/repositories/schedule-repos
 import { BcryptPasswordHasher } from "./infrastructure/services/BcryptService";
 import { JwtTokenService } from "./infrastructure/services/JwtTokenService";
 import { AuthController } from "./presentation/controllers/auth-controller";
+import { CityController } from "./presentation/controllers/CityController";
 import { CountryController } from "./presentation/controllers/country-controller";
 import { AuthMiddleware } from "./presentation/middlewares/authMiddleware";
 import { AuthRoutes } from "./presentation/routes/auth-router";
+import { CityRoutes } from "./presentation/routes/city-routes";
 import { CountryRoutes } from "./presentation/routes/country-routes";
 
 
@@ -43,7 +52,20 @@ const bannerRepository = new BannerRepository(prisma);
 const createCountryUseCase = new CreateCountryUseCase(countryRepository);
 const getAllCountriesUseCase = new GetAllCountriesUseCase(countryRepository);
 const updateCountryUseCase = new UpdateCountryUseCase(countryRepository);
-const deleteCountryUseCase = new DeleteCountryUseCase(countryRepository);
+const deleteCountryUseCase = new DeleteCountryUseCase(countryRepository, cityRepository);
+
+
+const getAllCountriesAlphabeticalUseCase = new GetAllCountriesAlphabeticalUseCase(countryRepository);
+
+
+const createCityUseCase = new CreateCityUseCase(cityRepository);
+const getAllCitiesUseCase = new GetAllCitiesUseCase(cityRepository);
+const updateCityUseCase = new UpdateCityUseCase(cityRepository);
+const deleteCityUseCase = new DeleteCityUseCase(cityRepository);
+const getAllCitiesAlphabeticalUseCase = new GetAllCitiesAlphabeticalUseCase(cityRepository);
+const getCitiesByCountryIdUseCase = new GetCitiesByCountryIdUseCase(cityRepository);
+
+
 
 
 const createUserUseCase = new CreateUserUseCase(adminRepository,passwordHasher);
@@ -64,17 +86,34 @@ const countryController = new CountryController(
   createCountryUseCase,
   getAllCountriesUseCase,
   updateCountryUseCase,
-  deleteCountryUseCase
+  deleteCountryUseCase,
+  getAllCountriesAlphabeticalUseCase
 );
+
+const cityController = new CityController(
+  createCityUseCase,
+  getAllCitiesUseCase,
+  updateCityUseCase,
+  deleteCityUseCase,
+  getAllCitiesAlphabeticalUseCase,
+  getCitiesByCountryIdUseCase
+);
+
+
+
 
  const authController = new AuthController(createUserUseCase,loginUserUseCase,tokenService,getUserUseCase);
  
 
     const countryRoutes = new CountryRoutes(countryController, authMiddleware );
     const authRoutes  = new AuthRoutes(authController,authMiddleware);
+    const cityRoutes = new CityRoutes(cityController, authMiddleware);
 
-    return {
-        countryRoutes,
-        authRoutes
-    }
+
+return {
+  countryRoutes,
+  authRoutes,
+  cityRoutes,
+};
+
 }

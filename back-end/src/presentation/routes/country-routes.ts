@@ -1,3 +1,5 @@
+    // src/presentation/routes/country-routes.ts
+
 import { Router } from 'express';
 import { AuthMiddleware } from '../middlewares/authMiddleware';
 import { CountryController } from '../controllers/country-controller';
@@ -37,6 +39,13 @@ export class CountryRoutes {
       this.authMiddleware.adminAuth.bind(this.authMiddleware),
       this.countryController.delete.bind(this.countryController)
     );
+
+this.router.get(
+  '/countries/alpha',
+  this.authMiddleware.adminAuth.bind(this.authMiddleware),
+  this.countryController.getAllAlpha.bind(this.countryController)
+);
+
 
     this.router.post('/create' , this.authMiddleware.adminAuth.bind(this.authMiddleware),this.countryController.create.bind(this.countryController))
 }

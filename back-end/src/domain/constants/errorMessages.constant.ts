@@ -20,4 +20,11 @@ export const ERRORMESSAGES = {
   COUNTRY_DELETE_FAILED: 'Failed to delete country',
   COUNTRY_ALREADY_EXISTS: 'Country with this name already exists',
 
+  CITY_ALREADY_EXISTS: 'City already exists in this country',
+  CITY_NOT_FOUND: 'City not found',
+  COUNTRY_HAS_CITIES: 'Cannot delete country with associated cities',
+  NO_CITIES_FOUND_FOR_COUNTRY: 'No cities found for the specified country.',
+
+
+
 } as const;
