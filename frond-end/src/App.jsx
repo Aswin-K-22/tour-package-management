@@ -26,6 +26,7 @@ function App() {
      useEffect(() => {
   const fetchAdmin = async () => {
     const data = await getAuth(); 
+    
 console.log('admin auth',data)
     if (data) {
       login(data);

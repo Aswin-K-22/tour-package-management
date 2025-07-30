@@ -17,6 +17,26 @@ export class CountryRoutes {
   private setupRoutes(): void {
     // Public routes
     console.log('Setting up user routes');
+     // Get list of countries (admin and normal auth allowed)
+    this.router.get(
+      '/countries',
+      this.authMiddleware.adminAuth.bind(this.authMiddleware),
+      this.countryController.getAll.bind(this.countryController)
+    );
+
+    // Edit a country by ID (admin only)
+    this.router.put(
+      '/:id',
+      this.authMiddleware.adminAuth.bind(this.authMiddleware),
+      this.countryController.update.bind(this.countryController)
+    );
+
+    // Delete a country by ID (admin only)
+    this.router.delete(
+      '/:id',
+      this.authMiddleware.adminAuth.bind(this.authMiddleware),
+      this.countryController.delete.bind(this.countryController)
+    );
 
     this.router.post('/create' , this.authMiddleware.adminAuth.bind(this.authMiddleware),this.countryController.create.bind(this.countryController))
 }

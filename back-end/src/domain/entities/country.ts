@@ -1,5 +1,7 @@
+// src/domain/entities/country.ts
+
 export interface Country {
-  id: number;
+  id: string;
   name: string;
   createdAt: Date;
   updatedAt: Date;

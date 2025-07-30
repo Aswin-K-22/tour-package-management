@@ -3,6 +3,9 @@ import { CreateUserUseCase } from "./application/usecases/auth/createUserUseCase
 import { GetUserUseCase } from "./application/usecases/auth/getUserUseCase";
 import { LoginUserUseCase } from "./application/usecases/auth/loginUserUseCase";
 import { CreateCountryUseCase } from "./application/usecases/country/CreateCountryUseCase";
+import { DeleteCountryUseCase } from "./application/usecases/country/DeleteCountryUseCase";
+import { GetAllCountriesUseCase } from "./application/usecases/country/GetAllCountriesUseCase";
+import { UpdateCountryUseCase } from "./application/usecases/country/UpdateCountryUseCase";
 import prisma from "./infrastructure/database/prisma-client";
 import { AdminRepository } from "./infrastructure/repositories/admin-repository";
 import { BannerRepository } from "./infrastructure/repositories/banner-repository";
@@ -38,11 +41,16 @@ const bannerRepository = new BannerRepository(prisma);
 
 //usecase
 const createCountryUseCase = new CreateCountryUseCase(countryRepository);
+const getAllCountriesUseCase = new GetAllCountriesUseCase(countryRepository);
+const updateCountryUseCase = new UpdateCountryUseCase(countryRepository);
+const deleteCountryUseCase = new DeleteCountryUseCase(countryRepository);
 
 
 const createUserUseCase = new CreateUserUseCase(adminRepository,passwordHasher);
 const loginUserUseCase = new LoginUserUseCase(adminRepository,passwordHasher);
 const getUserUseCase = new GetUserUseCase(adminRepository)
+
+
 
 
 
@@ -52,7 +60,13 @@ const getUserUseCase = new GetUserUseCase(adminRepository)
 
     //controller
 
- const countryController = new CountryController(createCountryUseCase);
+const countryController = new CountryController(
+  createCountryUseCase,
+  getAllCountriesUseCase,
+  updateCountryUseCase,
+  deleteCountryUseCase
+);
+
  const authController = new AuthController(createUserUseCase,loginUserUseCase,tokenService,getUserUseCase);
  
 

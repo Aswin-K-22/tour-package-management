@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, 
@@ -22,6 +22,16 @@ const AdminNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation(); // Hook to get current URL
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoggedIn && location.pathname !== '/admin/auth') {
+      toast.info('Please log in to access this page.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      navigate('/admin/auth');
+    }
+  }, [isLoggedIn, navigate]);
 
  const handleLogout = async () => {
     try {

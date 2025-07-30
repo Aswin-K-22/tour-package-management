@@ -7,4 +7,35 @@ export class CountryRepository extends BaseRepository<Country, string> implement
   constructor(prisma: PrismaClient) {
     super(prisma, 'country');
   }
+
+
+async getAll(page: number, limit: number): Promise<{
+    countries: Country[];
+    totalCount: number;
+  }> {
+    const skip = (page - 1) * limit;
+
+    const [rows, totalCount] = await Promise.all([
+      this.prisma.country.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.country.count(),
+    ]);
+
+    const countries: Country[] = rows.map((row) => ({
+      ...row,
+      id: row.id, 
+    }));
+
+    return { countries, totalCount };
+  }
+
+  async findByName(name: string): Promise<Country | null> {
+  return this.prisma.country.findUnique({
+    where: { name },
+  });
+}
+
 }
