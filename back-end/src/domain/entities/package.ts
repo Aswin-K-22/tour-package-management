@@ -6,7 +6,7 @@ export interface Package {
   destinationCountryId: string;
   destinationCityId: string;
   description: string;
-  terms: string;
+  terms: string[];
   photos: string[];
   createdAt: Date;
   updatedAt: Date;

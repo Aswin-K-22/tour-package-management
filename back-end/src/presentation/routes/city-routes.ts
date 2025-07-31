@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { AuthMiddleware } from '../middlewares/authMiddleware';
-import { CityController } from '../controllers/CityController';
+import { CityController } from '../controllers/city-controller';
 
 export class CityRoutes {
   public router: Router;

@@ -3,7 +3,7 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: '/api/tour-package',
   withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
+  //headers: { 'Content-Type': 'application/json' },
 });
 
 export const addTourPackage = async (packageData) => {
@@ -24,6 +24,6 @@ export const editTourPackage = async (id, packageData) => {
 };
 
 export const deleteTourPackage = async (id) => {
-  const response = await apiClient.delete(`/${id}`);
+  const response = await apiClient.delete(`/delete/${id}`);
   return response.data.data;
 };

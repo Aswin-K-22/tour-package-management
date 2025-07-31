@@ -13,6 +13,10 @@ import { DeleteCountryUseCase } from "./application/usecases/country/DeleteCount
 import { GetAllCountriesAlphabeticalUseCase } from "./application/usecases/country/GetAllCountriesAlphabeticalUseCase";
 import { GetAllCountriesUseCase } from "./application/usecases/country/GetAllCountriesUseCase";
 import { UpdateCountryUseCase } from "./application/usecases/country/UpdateCountryUseCase";
+import { CreatePackageUseCase } from '@/application/usecases/packages/CreatePackageUseCase';
+import { DeletePackageUseCase } from "./application/usecases/packages/DeletePackageUseCase";
+import { GetAllPackagesUseCase } from "./application/usecases/packages/GetAllPackagesUseCase";
+import { UpdatePackageUseCase } from "./application/usecases/packages/UpdatePackageUseCase";
 import prisma from "./infrastructure/database/prisma-client";
 import { AdminRepository } from "./infrastructure/repositories/admin-repository";
 import { BannerRepository } from "./infrastructure/repositories/banner-repository";
@@ -23,13 +27,16 @@ import { PackageRepository } from "./infrastructure/repositories/package-reposit
 import { ScheduleRepository } from "./infrastructure/repositories/schedule-repository";
 import { BcryptPasswordHasher } from "./infrastructure/services/BcryptService";
 import { JwtTokenService } from "./infrastructure/services/JwtTokenService";
+import { S3Service } from "./infrastructure/services/S3Service";
 import { AuthController } from "./presentation/controllers/auth-controller";
-import { CityController } from "./presentation/controllers/CityController";
+import { CityController } from "./presentation/controllers/city-controller";
 import { CountryController } from "./presentation/controllers/country-controller";
+import { PackageController } from "./presentation/controllers/package-controller";
 import { AuthMiddleware } from "./presentation/middlewares/authMiddleware";
 import { AuthRoutes } from "./presentation/routes/auth-router";
 import { CityRoutes } from "./presentation/routes/city-routes";
 import { CountryRoutes } from "./presentation/routes/country-routes";
+import { PackageRoutes } from "./presentation/routes/package-routes";
 
 
 
@@ -46,7 +53,7 @@ const bannerRepository = new BannerRepository(prisma);
   // services
    const  tokenService = new JwtTokenService();
    const passwordHasher = new BcryptPasswordHasher();
-
+     const s3Service = new S3Service();
 
 //usecase
 const createCountryUseCase = new CreateCountryUseCase(countryRepository);
@@ -74,8 +81,10 @@ const getUserUseCase = new GetUserUseCase(adminRepository)
 
 
 
-
-
+ const createPackageUseCase = new CreatePackageUseCase(packageRepository);
+const getAllPackagesUseCase = new GetAllPackagesUseCase(packageRepository,cityRepository,countryRepository);
+const updatePackageUseCase = new UpdatePackageUseCase(packageRepository,s3Service);
+const deletePackageUseCase = new DeletePackageUseCase(packageRepository,s3Service);
 //middleware
     const  authMiddleware  = new  AuthMiddleware (adminRepository,tokenService);
 
@@ -99,21 +108,32 @@ const cityController = new CityController(
   getCitiesByCountryIdUseCase
 );
 
+const packageController = new PackageController(
+  createPackageUseCase,
+  getAllPackagesUseCase,
+  updatePackageUseCase,
+  deletePackageUseCase
+);
+
 
 
 
  const authController = new AuthController(createUserUseCase,loginUserUseCase,tokenService,getUserUseCase);
+
+
  
 
     const countryRoutes = new CountryRoutes(countryController, authMiddleware );
     const authRoutes  = new AuthRoutes(authController,authMiddleware);
     const cityRoutes = new CityRoutes(cityController, authMiddleware);
+        const packageRoutes = new PackageRoutes(packageController, authMiddleware);
 
 
 return {
   countryRoutes,
   authRoutes,
   cityRoutes,
+  packageRoutes,
 };
 
 }

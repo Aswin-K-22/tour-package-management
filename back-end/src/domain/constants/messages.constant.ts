@@ -16,4 +16,9 @@ export const MESSAGES = {
     CITY_ADDED: 'City created successfully',
   CITY_UPDATED: 'City updated successfully',
   CITY_DELETED: 'City deleted successfully',
+
+  PACKAGE_UPDATED:'PACKAGE_UPDATED',
+
+  PACKAGE_ADDED : 'Package created successfully',
+  PACKAGE_DELETED :'PACKAGE_DELETED'
 } as const;

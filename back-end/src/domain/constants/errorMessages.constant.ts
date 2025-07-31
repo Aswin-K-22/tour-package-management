@@ -26,5 +26,7 @@ export const ERRORMESSAGES = {
   NO_CITIES_FOUND_FOR_COUNTRY: 'No cities found for the specified country.',
 
 
+  PACKAGE_NOT_FOUND:'PACKAGE_NOT_FOUND',
+
 
 } as const;

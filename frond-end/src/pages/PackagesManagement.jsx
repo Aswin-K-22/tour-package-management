@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Edit, Trash2, Plus, X, MapPin, Globe, Camera, AlertTriangle } from 'lucide-react';
-import { addTourPackage, getTourPackages, editTourPackage, deleteTourPackage } from '../services/tourPackageApi'
+import { addTourPackage, getTourPackages, editTourPackage, deleteTourPackage } from '../services/tourPackageApi';
 import { findAllCountriesWithAlphaOrder } from '../services/countriesApi';
 import { getCitiesByCountryId } from '../services/citiesApi';
 
@@ -17,7 +17,7 @@ const TourPackagesManagement = () => {
     destinationCountryId: '',
     destinationCityId: '',
     description: '',
-    termsAndConditions: ['']
+    termsAndConditions: [''],
   });
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
@@ -38,15 +38,18 @@ const TourPackagesManagement = () => {
     try {
       const [countriesData, packagesData] = await Promise.all([
         findAllCountriesWithAlphaOrder(),
-        getTourPackages(1, 1000)
+        getTourPackages(1, 1000),
       ]);
-      setCountries(countriesData);
-      setPackages(packagesData.packages);
+      console.log('Countries Data:', countriesData);
+      console.log('Packages Data:', packagesData);
+      setCountries(Array.isArray(countriesData) ? countriesData : []);
+      setPackages(packagesData.packages || []);
     } catch (error) {
       console.error('Error fetching initial data:', error);
-      setErrors({ fetch: 'Failed to load initial data. Please try again.' });
+      setErrors({ fetch: 'Failed to load initial data. Please check your network or API configuration.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Fetch cities when country changes
@@ -55,7 +58,7 @@ const TourPackagesManagement = () => {
       fetchCities(formData.sourceCountryId, 'source');
     } else {
       setSourceCities([]);
-      setFormData(prev => ({ ...prev, sourceCityId: '' }));
+      setFormData((prev) => ({ ...prev, sourceCityId: '' }));
     }
   }, [formData.sourceCountryId]);
 
@@ -64,7 +67,7 @@ const TourPackagesManagement = () => {
       fetchCities(formData.destinationCountryId, 'destination');
     } else {
       setDestinationCities([]);
-      setFormData(prev => ({ ...prev, destinationCityId: '' }));
+      setFormData((prev) => ({ ...prev, destinationCityId: '' }));
     }
   }, [formData.destinationCountryId]);
 
@@ -72,16 +75,18 @@ const TourPackagesManagement = () => {
     setLoading(true);
     try {
       const cities = await getCitiesByCountryId(countryId);
+      console.log(`${type} Cities Data:`, cities);
       if (type === 'source') {
-        setSourceCities(cities);
+        setSourceCities(Array.isArray(cities) ? cities : []);
       } else {
-        setDestinationCities(cities);
+        setDestinationCities(Array.isArray(cities) ? cities : []);
       }
     } catch (error) {
       console.error(`Error fetching ${type} cities:`, error);
-      setErrors(prev => ({ ...prev, [`${type}Cities`]: `Failed to load ${type} cities.` }));
+      setErrors((prev) => ({ ...prev, [`${type}Cities`]: `Failed to load ${type} cities.` }));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Validate form
@@ -93,7 +98,7 @@ const TourPackagesManagement = () => {
     if (!formData.destinationCountryId) newErrors.destinationCountryId = 'Destination country is required';
     if (!formData.destinationCityId) newErrors.destinationCityId = 'Destination city is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.termsAndConditions.some(term => term.trim())) {
+    if (!formData.termsAndConditions.some((term) => term.trim())) {
       newErrors.termsAndConditions = 'At least one valid term is required';
     }
     setErrors(newErrors);
@@ -103,20 +108,19 @@ const TourPackagesManagement = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    setErrors(prev => ({ ...prev, [name]: '' }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
 
-    // Reset city when country changes
     if (name === 'sourceCountryId') {
-      setFormData(prev => ({ ...prev, sourceCityId: '' }));
-      setErrors(prev => ({ ...prev, sourceCityId: '' }));
+      setFormData((prev) => ({ ...prev, sourceCityId: '' }));
+      setErrors((prev) => ({ ...prev, sourceCityId: '' }));
     }
     if (name === 'destinationCountryId') {
-      setFormData(prev => ({ ...prev, destinationCityId: '' }));
-      setErrors(prev => ({ ...prev, destinationCityId: '' }));
+      setFormData((prev) => ({ ...prev, destinationCityId: '' }));
+      setErrors((prev) => ({ ...prev, destinationCityId: '' }));
     }
   };
 
@@ -124,27 +128,27 @@ const TourPackagesManagement = () => {
   const handleTermChange = (index, value) => {
     const newTerms = [...formData.termsAndConditions];
     newTerms[index] = value;
-    setFormData(prev => ({ ...prev, termsAndConditions: newTerms }));
-    setErrors(prev => ({ ...prev, termsAndConditions: '' }));
+    setFormData((prev) => ({ ...prev, termsAndConditions: newTerms }));
+    setErrors((prev) => ({ ...prev, termsAndConditions: '' }));
   };
 
   const addTerm = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      termsAndConditions: [...prev.termsAndConditions, '']
+      termsAndConditions: [...prev.termsAndConditions, ''],
     }));
   };
 
   const removeTerm = (index) => {
     const newTerms = formData.termsAndConditions.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, termsAndConditions: newTerms }));
+    setFormData((prev) => ({ ...prev, termsAndConditions: newTerms }));
   };
 
   // Handle photo uploads
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     setSelectedPhotos(files);
-    const previewUrls = files.map(file => URL.createObjectURL(file));
+    const previewUrls = files.map((file) => URL.createObjectURL(file));
     setPhotoPreviewUrls(previewUrls);
   };
 
@@ -164,7 +168,7 @@ const TourPackagesManagement = () => {
       destinationCountryId: '',
       destinationCityId: '',
       description: '',
-      termsAndConditions: ['']
+      termsAndConditions: [''],
     });
     setSelectedPhotos([]);
     setPhotoPreviewUrls([]);
@@ -183,32 +187,86 @@ const TourPackagesManagement = () => {
 
     setLoading(true);
     try {
-      const sourceCountry = countries.find(c => c.id === parseInt(formData.sourceCountryId));
-      const sourceCity = sourceCities.find(c => c.id === parseInt(formData.sourceCityId));
-      const destCountry = countries.find(c => c.id === parseInt(formData.destinationCountryId));
-      const destCity = destinationCities.find(c => c.id === parseInt(formData.destinationCityId));
+      // Find country and city objects for potential name references (not sent to backend)
+      const sourceCountry = countries.find((c) => c.id === formData.sourceCountryId);
+      const sourceCity = sourceCities.find((c) => c.id === formData.sourceCityId);
+      const destCountry = countries.find((c) => c.id === formData.destinationCountryId);
+      const destCity = destinationCities.find((c) => c.id === formData.destinationCityId);
 
-      const packageData = {
-        title: formData.title,
-        sourceCountryId: parseInt(formData.sourceCountryId),
-        sourceCountryName: sourceCountry?.name,
-        sourceCityId: parseInt(formData.sourceCityId),
-        sourceCityName: sourceCity?.name,
-        destinationCountryId: parseInt(formData.destinationCountryId),
-        destinationCountryName: destCountry?.name,
-        destinationCityId: parseInt(formData.destinationCityId),
-        destinationCityName: destCity?.name,
-        description: formData.description,
-        termsAndConditions: formData.termsAndConditions.filter(term => term.trim()),
-        photos: photoPreviewUrls.length > 0 ? photoPreviewUrls : editingPackage?.photos || []
-      };
+      // Create FormData object
+      const packageData = new FormData();
+      packageData.append('title', formData.title);
+      packageData.append('sourceCountryId', formData.sourceCountryId); // Send as string
+      packageData.append('sourceCityId', formData.sourceCityId); // Send as string
+      packageData.append('destinationCountryId', formData.destinationCountryId); // Send as string
+      packageData.append('destinationCityId', formData.destinationCityId); // Send as string
+      packageData.append('description', formData.description);
+
+      // Append termsAndConditions as an array
+      formData.termsAndConditions
+        .filter((term) => term.trim())
+        .forEach((term, index) => {
+          packageData.append(`termsAndConditions[${index}]`, term);
+        });
+
+      // Append photos
+      selectedPhotos.forEach((photo) => {
+        packageData.append('photos', photo);
+      });
+
+      // Log FormData for debugging
+      console.log('Request Data to Backend:');
+      for (const [key, value] of packageData.entries()) {
+        console.log(`${key}:`, value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value);
+      }
 
       if (editingPackage) {
-        await editTourPackage(editingPackage.id, packageData);
-        setPackages(prev => prev.map(pkg => pkg.id === editingPackage.id ? { ...editingPackage, ...packageData } : pkg));
+        // Edit existing package
+        const updatedPackage = await editTourPackage(editingPackage.id, packageData);
+        setPackages((prev) =>
+          prev.map((pkg) =>
+            pkg.id === editingPackage.id
+              ? {
+                  ...pkg,
+                  title: formData.title,
+                  sourceCountryId: formData.sourceCountryId,
+                  sourceCityId: formData.sourceCityId,
+                  destinationCountryId: formData.destinationCountryId,
+                  destinationCityId: formData.destinationCityId,
+                  description: formData.description,
+                  termsAndConditions: formData.termsAndConditions.filter((term) => term.trim()),
+                  photos: photoPreviewUrls, // Temporary, adjust if backend returns URLs
+                  // Include names for display purposes (not sent to backend)
+                  sourceCountryName: sourceCountry?.name || '',
+                  sourceCityName: sourceCity?.name || '',
+                  destinationCountryName: destCountry?.name || '',
+                  destinationCityName: destCity?.name || '',
+                }
+              : pkg
+          )
+        );
       } else {
+        // Add new package
         const newPackage = await addTourPackage(packageData);
-        setPackages(prev => [...prev, newPackage]);
+        setPackages((prev) => [
+          ...prev,
+          {
+            id: newPackage.id, // Assuming backend returns the new package with an ID
+            title: formData.title,
+            sourceCountryId: formData.sourceCountryId,
+            sourceCityId: formData.sourceCityId,
+            destinationCountryId: formData.destinationCountryId,
+            destinationCityId: formData.destinationCityId,
+            description: formData.description,
+            termsAndConditions: formData.termsAndConditions.filter((term) => term.trim()),
+            photos: photoPreviewUrls, // Temporary, adjust if backend returns URLs
+            // Include names for display purposes (not sent to backend)
+            sourceCountryName: sourceCountry?.name || '',
+            sourceCityName: sourceCity?.name || '',
+            destinationCountryName: destCountry?.name || '',
+            destinationCityName: destCity?.name || '',
+          },
+        ]);
       }
 
       resetForm();
@@ -217,8 +275,9 @@ const TourPackagesManagement = () => {
     } catch (error) {
       console.error('Error submitting package:', error);
       setErrors({ submit: 'Failed to save package. Please try again.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Handle edit
@@ -227,28 +286,32 @@ const TourPackagesManagement = () => {
     try {
       const [sourceCitiesData, destCitiesData] = await Promise.all([
         getCitiesByCountryId(pkg.sourceCountryId),
-        getCitiesByCountryId(pkg.destinationCountryId)
+        getCitiesByCountryId(pkg.destinationCountryId),
       ]);
-      setSourceCities(sourceCitiesData);
-      setDestinationCities(destCitiesData);
+      console.log('Edit Source Cities:', sourceCitiesData);
+      console.log('Edit Destination Cities:', destCitiesData);
+      setSourceCities(Array.isArray(sourceCitiesData) ? sourceCitiesData : []);
+      setDestinationCities(Array.isArray(destCitiesData) ? destCitiesData : []);
       setFormData({
         title: pkg.title,
-        sourceCountryId: pkg.sourceCountryId.toString(),
-        sourceCityId: pkg.sourceCityId.toString(),
-        destinationCountryId: pkg.destinationCountryId.toString(),
-        destinationCityId: pkg.destinationCityId.toString(),
+        sourceCountryId: pkg.sourceCountryId,
+        sourceCityId: pkg.sourceCityId,
+        destinationCountryId: pkg.destinationCountryId,
+        destinationCityId: pkg.destinationCityId,
         description: pkg.description,
-        termsAndConditions: pkg.termsAndConditions.length > 0 ? pkg.termsAndConditions : ['']
+        termsAndConditions: pkg.termsAndConditions.length > 0 ? pkg.termsAndConditions : [''],
       });
       setPhotoPreviewUrls(pkg.photos || []);
+      setSelectedPhotos([]); // Reset selected photos for edit
       setEditingPackage(pkg);
       setShowAddForm(true);
       setErrors({});
     } catch (error) {
       console.error('Error loading cities for edit:', error);
       setErrors({ edit: 'Failed to load city data for editing.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Handle delete
@@ -256,13 +319,14 @@ const TourPackagesManagement = () => {
     setLoading(true);
     try {
       await deleteTourPackage(id);
-      setPackages(prev => prev.filter(pkg => pkg.id !== id));
+      setPackages((prev) => prev.filter((pkg) => pkg.id !== id));
       setDeleteConfirm(null);
     } catch (error) {
       console.error('Error deleting package:', error);
       setErrors({ delete: 'Failed to delete package. Please try again.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -292,6 +356,14 @@ const TourPackagesManagement = () => {
             </button>
           </div>
         </div>
+
+        {/* Error Message for Initial Data Fetch */}
+        {errors.fetch && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-8 flex items-center">
+            <AlertTriangle className="w-5 h-5 mr-2" />
+            {errors.fetch}
+          </div>
+        )}
 
         {/* Add/Edit Form */}
         {showAddForm && (
@@ -349,11 +421,22 @@ const TourPackagesManagement = () => {
                       disabled={loading}
                     >
                       <option value="">Select Country</option>
-                      {countries.map(country => (
-                        <option key={country.id} value={country.id}>{country.name}</option>
-                      ))}
+                      {countries.length > 0 ? (
+                        countries.map((country) => (
+                          <option key={country.id} value={country.id}>
+                            {country.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>
+                          No countries available
+                        </option>
+                      )}
                     </select>
                     {errors.sourceCountryId && <p className="mt-1 text-sm text-red-500">{errors.sourceCountryId}</p>}
+                    {!errors.sourceCountryId && countries.length === 0 && (
+                      <p className="mt-1 text-sm text-yellow-500">No countries loaded. Please check API.</p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="sourceCityId" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -369,8 +452,10 @@ const TourPackagesManagement = () => {
                       className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 ${errors.sourceCityId ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="">Select City</option>
-                      {sourceCities.map(city => (
-                        <option key={city.id} value={city.id}>{city.name}</option>
+                      {sourceCities.map((city) => (
+                        <option key={city.id} value={city.id}>
+                          {city.name}
+                        </option>
                       ))}
                     </select>
                     {errors.sourceCityId && <p className="mt-1 text-sm text-red-500">{errors.sourceCityId}</p>}
@@ -394,11 +479,22 @@ const TourPackagesManagement = () => {
                       disabled={loading}
                     >
                       <option value="">Select Country</option>
-                      {countries.map(country => (
-                        <option key={country.id} value={country.id}>{country.name}</option>
-                      ))}
+                      {countries.length > 0 ? (
+                        countries.map((country) => (
+                          <option key={country.id} value={country.id}>
+                            {country.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>
+                          No countries available
+                        </option>
+                      )}
                     </select>
                     {errors.destinationCountryId && <p className="mt-1 text-sm text-red-500">{errors.destinationCountryId}</p>}
+                    {!errors.destinationCountryId && countries.length === 0 && (
+                      <p className="mt-1 text-sm text-yellow-500">No countries loaded. Please check API.</p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="destinationCityId" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -414,8 +510,10 @@ const TourPackagesManagement = () => {
                       className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 ${errors.destinationCityId ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="">Select City</option>
-                      {destinationCities.map(city => (
-                        <option key={city.id} value={city.id}>{city.name}</option>
+                      {destinationCities.map((city) => (
+                        <option key={city.id} value={city.id}>
+                          {city.name}
+                        </option>
                       ))}
                     </select>
                     {errors.destinationCityId && <p className="mt-1 text-sm text-red-500">{errors.destinationCityId}</p>}
@@ -606,7 +704,7 @@ const TourPackagesManagement = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex -space-x-2">
-                          {pkg.photos?.slice(0, 3).map((photo, index) => (
+                          {pkg.photoUrls?.slice(0, 3).map((photo, index) => (
                             <img
                               key={index}
                               src={photo}

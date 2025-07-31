@@ -45,23 +45,33 @@ model City {
 
 // Tour Package model
 model Package {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  title             String   @unique
-  sourceCountryId   String   @db.ObjectId
-  sourceCountry     Country  @relation("SourceCountry", fields: [sourceCountryId], references: [id])
-  sourceCityId      String   @db.ObjectId
-  sourceCity        City     @relation("SourceCity", fields: [sourceCityId], references: [id])
-  destinationCountryId String @db.ObjectId
-  destinationCountry Country  @relation("DestinationCountry", fields: [destinationCountryId], references: [id])
-  destinationCityId String   @db.ObjectId
-  destinationCity   City     @relation("DestinationCity", fields: [destinationCityId], references: [id])
-  description       String
-  terms             String
-  photos            String[]
-  schedules         Schedule[] @relation("PackageSchedules")
-  enquiries         Enquiry[]  @relation("PackageEnquiries")
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  title                  String   @unique
+
+  // SOURCE
+  sourceCountryId        String   @db.ObjectId
+  sourceCountry          Country  @relation("SourceCountry", fields: [sourceCountryId], references: [id])
+  sourceCityId           String   @db.ObjectId
+  sourceCity             City     @relation("SourceCity", fields: [sourceCityId], references: [id])
+
+  // DESTINATION
+  destinationCountryId   String   @db.ObjectId
+  destinationCountry     Country  @relation("DestinationCountry", fields: [destinationCountryId], references: [id])
+  destinationCityId      String   @db.ObjectId
+  destinationCity        City     @relation("DestinationCity", fields: [destinationCityId], references: [id])
+
+  // CONTENT
+  description            String
+  terms                  String[]
+  photos                 String[]
+
+  // RELATIONS
+  schedules              Schedule[] @relation("PackageSchedules")
+  enquiries              Enquiry[]  @relation("PackageEnquiries")
+
+  // TIMESTAMPS
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 // Package Schedule model
