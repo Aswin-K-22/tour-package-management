@@ -1,0 +1,35 @@
+[33mcommit bf4d4cf8e713850eca9d1dbaa8f16ef83336a9e7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mapi-integration[m[33m)[m
+Author: Aswin K <aswinkplacement@gmail.com>
+Date:   Thu Jul 31 20:28:41 2025 +0530
+
+    Finalize tour package management system: Merged all feature branches, completed admin panel, customer website, and enquiry form API
+
+[33mcommit f00f80029d274e6981e6320d4fb5f7d98a33e499[m[33m ([m[1;31morigin/api-integration[m[33m)[m
+Author: Aswin K <aswinkplacement@gmail.com>
+Date:   Thu Jul 31 08:43:29 2025 +0530
+
+    Add package module with create and delete functionality
+
+[33mcommit 9f0f64e60379f20f9e69cec2f47ad0d9dd85a579[m
+Author: Aswin K <aswinkplacement@gmail.com>
+Date:   Thu Jul 31 05:09:03 2025 +0530
+
+    Implement city module: add, edit, delete with unique city per country constraint
+
+[33mcommit 4fa1ec162e13bd808b7941e95226a446a7a600d1[m
+Author: Aswin K <aswinkplacement@gmail.com>
+Date:   Thu Jul 31 02:01:24 2025 +0530
+
+    Add country module: create, edit, delete (with confirmation), and list with pagination
+
+[33mcommit 49140013c99395a52bcaa3107196c1c18c743932[m
+Author: Aswin K <aswinkplacement@gmail.com>
+Date:   Thu Jul 31 01:07:34 2025 +0530
+
+    Implement admin login/logout, signup, and auth check with JWT. Added form validation and toast notifications. Integrated backend API.
+
+[33mcommit 5dcc66a6284c691a2b89872d340597a56236d1e4[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Author: Aswin K <aswinkplacement@gmail.com>
+Date:   Wed Jul 30 21:41:01 2025 +0530
+
+    Initial commit: Set up project structure, frontend (React + Vite + Tailwind), and backend (Node.js + Express + MongoDB Atlas + AWS S3 + JWT)
