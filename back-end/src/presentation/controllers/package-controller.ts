@@ -4,10 +4,12 @@ import { HttpStatus } from '@/domain/enums/httpStatus.enum';
 
 import { S3Service } from '@/infrastructure/services/S3Service';
 import { v4 as uuidv4 } from 'uuid';
-import { CreatePackageUseCase } from '@/application/usecases/packages/CreatePackageUseCase';
+import { CreatePackageUseCase } from '@/application/usecases/packages/CreatePackageUseCasePhoto';
 import { GetAllPackagesUseCase } from '@/application/usecases/packages/GetAllPackagesUseCase';
 import { UpdatePackageUseCase } from '@/application/usecases/packages/UpdatePackageUseCase';
 import { DeletePackageUseCase } from '@/application/usecases/packages/DeletePackageUseCase';
+import { GetAllPackagesFullUseCase } from '@/application/usecases/packages/GetAllPackagesFullUseCase';
+import { GetPackageByIdUseCase } from '@/application/usecases/packages/GetPackageByIdUseCase';
 
 export class PackageController {
   private s3Service: S3Service;
@@ -17,6 +19,8 @@ export class PackageController {
     private getAllPackagesUseCase: GetAllPackagesUseCase,
     private updatePackageUseCase: UpdatePackageUseCase,
     private deletePackageUseCase: DeletePackageUseCase,
+    private getAllPackagesFullUseCase: GetAllPackagesFullUseCase,
+    private getPackageByIdUseCase :GetPackageByIdUseCase,
   ) {
     this.s3Service = new S3Service(); // Initialize S3 service
   }
@@ -249,6 +253,48 @@ async update(req: Request, res: Response) {
       });
     }
   }
+
+
+  async getAllPackages(req: Request, res: Response) {
+  try {
+    const result = await this.getAllPackagesFullUseCase.execute(); // no pagination params
+    this.sendResponse(res, {
+      status: 200,
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error('Error in PackageController.getAllPackages:', error);
+    this.sendResponse(res, {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+}
+
+
+async getById(req: Request, res: Response) {
+  const packageId = req.params.id;
+
+  try {
+    const result = await this.getPackageByIdUseCase.execute(packageId); // Assumes getById is added to use case
+    return this.sendResponse(res, {
+      status: HttpStatus.OK,
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('Error in PackageController.getById:', error);
+    return this.sendResponse(res, {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      success: false,
+      message: error?.message || 'Failed to get package by ID',
+    });
+  }
+}
+
+
 
 async delete(req: Request, res: Response) {
   const packageId = req.params.id;

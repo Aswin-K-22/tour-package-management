@@ -1,99 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, Star, ArrowRight, Heart } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MapPin, Star, ArrowRight, Heart } from 'lucide-react';
+import { getTourPackages } from '../services/tourPackageApi';
 
 const PackagesListPage = () => {
   const [packages, setPackages] = useState([]);
   const [favoritePackages, setFavoritePackages] = useState(new Set());
   const [loading, setLoading] = useState(true);
-
-  // Dummy data
-  const tourPackages = [
-    {
-      "id": 1,
-      "name": "Kerala to Malaysia 4 Days 3 Nights",
-      "description": "Explore the vibrant culture and stunning beaches of Malaysia with our exclusive package.",
-      "photo": "https://images.unsplash.com/photo-1514282401047-d79a71fac224?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      "amount": "$799",
-      "detailsLink": "/packages/malaysia",
-      "duration": "4 Days 3 Nights",
-      "location": "Malaysia",
-      "rating": 4.8,
-      "originalPrice": "$999"
-    },
-    {
-      "id": 2,
-      "name": "Goa to Bali Adventure 5 Days",
-      "description": "Dive into the tropical paradise of Bali with our curated adventure package.",
-      "photo": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      "amount": "$999",
-      "detailsLink": "/packages/bali",
-      "duration": "5 Days",
-      "location": "Bali, Indonesia",
-      "rating": 4.9,
-      "originalPrice": "$1199"
-    },
-    {
-      "id": 3,
-      "name": "Mumbai to Singapore City Tour",
-      "description": "Discover the futuristic cityscape of Singapore with our premium tour package.",
-      "photo": "https://images.unsplash.com/photo-1515036551092-39b3e1fa4627?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      "amount": "$850",
-      "detailsLink": "/packages/singapore",
-      "duration": "4 Days",
-      "location": "Singapore",
-      "rating": 4.7,
-      "originalPrice": "$1050"
-    },
-    {
-      "id": 4,
-      "name": "Delhi to Thailand Escape 6 Days",
-      "description": "Experience the vibrant markets and serene temples of Thailand.",
-      "photo": "https://images.unsplash.com/photo-1528183429752-0409130b248e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      "amount": "$1100",
-      "detailsLink": "/packages/thailand",
-      "duration": "6 Days",
-      "location": "Thailand",
-      "rating": 4.6,
-      "originalPrice": "$1300"
-    },
-    {
-      "id": 5,
-      "name": "Chennai to Dubai Luxury Tour",
-      "description": "Indulge in the opulence of Dubai with our luxury travel package.",
-      "photo": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      "amount": "$1200",
-      "detailsLink": "/packages/dubai",
-      "duration": "5 Days 4 Nights",
-      "location": "Dubai, UAE",
-      "rating": 4.9,
-      "originalPrice": "$1450"
-    },
-    {
-      "id": 6,
-      "name": "Bangalore to Maldives Retreat",
-      "description": "Relax in the crystal-clear waters of the Maldives with our exclusive retreat.",
-      "photo": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      "amount": "$1500",
-      "detailsLink": "/packages/maldives",
-      "duration": "7 Days 6 Nights",
-      "location": "Maldives",
-      "rating": 5.0,
-      "originalPrice": "$1800"
-    }
-  ];
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const packagesPerPage = 6;
 
   useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-      setPackages(tourPackages);
-      setLoading(false);
-    }, 1000);
+    fetchPackages();
+  }, [currentPage]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const fetchPackages = async () => {
+    setLoading(true);
+    try {
+      const response = await getTourPackages(currentPage, packagesPerPage);
+      console.log('response', response);
+      const tourPackages = response.packages || [];
+      const mappedPackages = tourPackages.map((pkg) => ({
+        id: pkg.id,
+        name: pkg.title || 'N/A',
+        description: pkg.description || 'N/A',
+        photo: pkg.photoUrls?.[0] || 'https://via.placeholder.com/600x400',
+        amount: 'N/A', // Amount not in response
+        detailsLink: `/package/${pkg.id}`,
+        location: (pkg.destinationCityName && pkg.destinationCountryName) ? `${pkg.destinationCityName}, ${pkg.destinationCountryName}` : 'N/A',
+        rating: generateRandomRating(), // Kept random as per original code
+        originalPrice: 'N/A', // Original price not in response
+      }));
+      setPackages(mappedPackages);
+      setTotalPages(response.totalPages || 1);
+    } catch (error) {
+      console.error('Error fetching tour packages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateRandomRating = () => {
+    return (Math.random() * (5 - 4.5) + 4.5).toFixed(1);
+  };
 
   const toggleFavorite = (packageId) => {
-    setFavoritePackages(prev => {
+    setFavoritePackages((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(packageId)) {
         newSet.delete(packageId);
@@ -105,11 +58,10 @@ const PackagesListPage = () => {
   };
 
   const PackageCard = ({ pkg, index }) => (
-    <div 
+    <div
       className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden"
       style={{ animationDelay: `${index * 100}ms` }}
     >
-      {/* Image Container */}
       <div className="relative overflow-hidden h-56">
         <img
           src={pkg.photo}
@@ -118,51 +70,36 @@ const PackagesListPage = () => {
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        
-        {/* Favorite Button */}
         <button
           onClick={() => toggleFavorite(pkg.id)}
           className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-sm rounded-full transition-all duration-300 hover:bg-white/30"
           aria-label="Add to favorites"
         >
-          <Heart 
+          <Heart
             className={`w-5 h-5 transition-colors duration-300 ${
               favoritePackages.has(pkg.id) ? 'text-red-500 fill-red-500' : 'text-white'
             }`}
           />
         </button>
-
-        {/* Price Badge */}
         <div className="absolute top-4 left-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
           {pkg.amount}
         </div>
-
-        {/* Rating */}
         <div className="absolute bottom-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full">
           <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
           <span className="text-sm font-semibold text-gray-800">{pkg.rating}</span>
         </div>
       </div>
-
-      {/* Content */}
       <div className="p-6">
         <div className="flex items-center text-sm text-gray-500 mb-2">
           <MapPin className="w-4 h-4 mr-1" />
           <span>{pkg.location}</span>
-          <span className="mx-2">•</span>
-          <Calendar className="w-4 h-4 mr-1" />
-          <span>{pkg.duration}</span>
         </div>
-
         <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors duration-300">
           {pkg.name}
         </h3>
-
         <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
           {pkg.description}
         </p>
-
-        {/* Price Section */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-green-600">{pkg.amount}</span>
@@ -172,15 +109,13 @@ const PackagesListPage = () => {
           </div>
           <span className="text-sm text-green-600 font-medium">per person</span>
         </div>
-
-        {/* CTA Button */}
-        <button 
+        <Link
+          to={pkg.detailsLink}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 flex items-center justify-center group"
-          onClick={() => window.location.href = pkg.detailsLink}
         >
           <span>View Details</span>
           <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -198,9 +133,14 @@ const PackagesListPage = () => {
     </div>
   );
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white py-20 px-4">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto text-center">
@@ -215,8 +155,6 @@ const PackagesListPage = () => {
           </p>
         </div>
       </div>
-
-      {/* Packages Grid */}
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
@@ -226,19 +164,32 @@ const PackagesListPage = () => {
             Choose from our selection of premium tour packages designed to create lasting memories
           </p>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {loading
-            ? Array.from({ length: 6 }).map((_, index) => (
-                <LoadingCard key={index} />
-              ))
-            : packages.map((pkg, index) => (
-                <PackageCard key={pkg.id} pkg={pkg} index={index} />
-              ))
-          }
+            ? Array.from({ length: 6 }).map((_, index) => <LoadingCard key={index} />)
+            : packages.map((pkg, index) => <PackageCard key={pkg.id} pkg={pkg} index={index} />)}
         </div>
-
-        {/* Call to Action */}
+        {!loading && totalPages > 1 && (
+          <div className="p-6 flex justify-between items-center">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loading}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || loading}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
         {!loading && (
           <div className="text-center mt-16">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-2xl shadow-2xl">
@@ -255,7 +206,6 @@ const PackagesListPage = () => {
           </div>
         )}
       </div>
-
       <style jsx>{`
         @keyframes fade-in {
           from {
@@ -267,11 +217,9 @@ const PackagesListPage = () => {
             transform: translateY(0);
           }
         }
-        
         .animate-fade-in {
           animation: fade-in 1s ease-out;
         }
-        
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;

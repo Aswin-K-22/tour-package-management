@@ -19,11 +19,28 @@ export const getTourPackages = async (page, limit) => {
 };
 
 export const editTourPackage = async (id, packageData) => {
-  const response = await apiClient.put(`/${id}`, packageData);
+  const response = await apiClient.put(`/update/${id}`, packageData);
   return response.data.data;
 };
 
 export const deleteTourPackage = async (id) => {
   const response = await apiClient.delete(`/delete/${id}`);
   return response.data.data;
+};
+
+
+export const getAllTourPackages = async () => {
+  const response = await apiClient.get('/all');
+  return response.data.data.data;
+};
+
+
+export const getPackageById = async (id) => {
+  try {
+    const response = await apiClient.get(`/get/${id}`);
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching schedule by ID:", error);
+    throw error;
+  }
 };

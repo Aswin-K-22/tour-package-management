@@ -45,7 +45,7 @@ console.log('admin auth',data)
           <Route index element={<HomePage />} />
              <Route path="packages" element={<PackagesListPage />} />
              <Route path="package/:id" element={<TourPackageDetails />} />
-             <Route path="thankyou" element={<ThankYouPage />} />
+             <Route path="thank-you" element={<ThankYouPage />} />
         </Route>
 
         <Route path="/admin" element={<AdminLayout />}>

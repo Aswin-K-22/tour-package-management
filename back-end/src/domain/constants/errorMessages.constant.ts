@@ -25,8 +25,10 @@ export const ERRORMESSAGES = {
   COUNTRY_HAS_CITIES: 'Cannot delete country with associated cities',
   NO_CITIES_FOUND_FOR_COUNTRY: 'No cities found for the specified country.',
 
-
   PACKAGE_NOT_FOUND:'PACKAGE_NOT_FOUND',
+ INVALID_DATE_RANGE: 'From date cannot be later than To date',
+ ENQUIRY_ALREADY_EXISTS: 'An enquiry with the same details already exists',
 
+   SCHEDULE_NOT_FOUND: 'Schedule not found',
 
 } as const;

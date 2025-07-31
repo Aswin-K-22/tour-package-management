@@ -5,11 +5,12 @@ import { findAllCountriesWithAlphaOrder } from '../services/countriesApi';
 import { getCitiesByCountryId } from '../services/citiesApi';
 
 const TourPackagesManagement = () => {
-  // State
   const [countries, setCountries] = useState([]);
   const [sourceCities, setSourceCities] = useState([]);
   const [destinationCities, setDestinationCities] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
     sourceCountryId: '',
@@ -21,29 +22,29 @@ const TourPackagesManagement = () => {
   });
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState([]);
+  const [deleteImageKeys, setDeleteImageKeys] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const packagesPerPage = 3;
 
-  // Fetch countries and packages on mount
   useEffect(() => {
     fetchInitialData();
-  }, []);
+  }, [currentPage]);
 
   const fetchInitialData = async () => {
     setLoading(true);
     try {
       const [countriesData, packagesData] = await Promise.all([
         findAllCountriesWithAlphaOrder(),
-        getTourPackages(1, 1000),
+        getTourPackages(currentPage, packagesPerPage),
       ]);
-      console.log('Countries Data:', countriesData);
-      console.log('Packages Data:', packagesData);
       setCountries(Array.isArray(countriesData) ? countriesData : []);
       setPackages(packagesData.packages || []);
+      setTotalPages(packagesData.totalPages || 1);
     } catch (error) {
       console.error('Error fetching initial data:', error);
       setErrors({ fetch: 'Failed to load initial data. Please check your network or API configuration.' });
@@ -52,7 +53,6 @@ const TourPackagesManagement = () => {
     }
   };
 
-  // Fetch cities when country changes
   useEffect(() => {
     if (formData.sourceCountryId) {
       fetchCities(formData.sourceCountryId, 'source');
@@ -75,7 +75,6 @@ const TourPackagesManagement = () => {
     setLoading(true);
     try {
       const cities = await getCitiesByCountryId(countryId);
-      console.log(`${type} Cities Data:`, cities);
       if (type === 'source') {
         setSourceCities(Array.isArray(cities) ? cities : []);
       } else {
@@ -89,7 +88,6 @@ const TourPackagesManagement = () => {
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = 'Package title is required';
@@ -105,7 +103,6 @@ const TourPackagesManagement = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -124,7 +121,6 @@ const TourPackagesManagement = () => {
     }
   };
 
-  // Handle terms and conditions
   const handleTermChange = (index, value) => {
     const newTerms = [...formData.termsAndConditions];
     newTerms[index] = value;
@@ -144,22 +140,23 @@ const TourPackagesManagement = () => {
     setFormData((prev) => ({ ...prev, termsAndConditions: newTerms }));
   };
 
-  // Handle photo uploads
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     setSelectedPhotos(files);
     const previewUrls = files.map((file) => URL.createObjectURL(file));
-    setPhotoPreviewUrls(previewUrls);
+    setPhotoPreviewUrls((prev) => [...prev, ...previewUrls]);
   };
 
   const removePhoto = (index) => {
     const newPhotos = selectedPhotos.filter((_, i) => i !== index);
     const newUrls = photoPreviewUrls.filter((_, i) => i !== index);
+    if (editingPackage && index < editingPackage.photos?.length) {
+      setDeleteImageKeys((prev) => [...prev, editingPackage.photos[index]]);
+    }
     setSelectedPhotos(newPhotos);
     setPhotoPreviewUrls(newUrls);
   };
 
-  // Reset form
   const resetForm = () => {
     setFormData({
       title: '',
@@ -172,6 +169,7 @@ const TourPackagesManagement = () => {
     });
     setSelectedPhotos([]);
     setPhotoPreviewUrls([]);
+    setDeleteImageKeys([]);
     setSourceCities([]);
     setDestinationCities([]);
     setErrors({});
@@ -180,48 +178,42 @@ const TourPackagesManagement = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      // Find country and city objects for potential name references (not sent to backend)
       const sourceCountry = countries.find((c) => c.id === formData.sourceCountryId);
       const sourceCity = sourceCities.find((c) => c.id === formData.sourceCityId);
       const destCountry = countries.find((c) => c.id === formData.destinationCountryId);
       const destCity = destinationCities.find((c) => c.id === formData.destinationCityId);
 
-      // Create FormData object
       const packageData = new FormData();
       packageData.append('title', formData.title);
-      packageData.append('sourceCountryId', formData.sourceCountryId); // Send as string
-      packageData.append('sourceCityId', formData.sourceCityId); // Send as string
-      packageData.append('destinationCountryId', formData.destinationCountryId); // Send as string
-      packageData.append('destinationCityId', formData.destinationCityId); // Send as string
+      packageData.append('sourceCountryId', formData.sourceCountryId);
+      packageData.append('sourceCityId', formData.sourceCityId);
+      packageData.append('destinationCountryId', formData.destinationCountryId);
+      packageData.append('destinationCityId', formData.destinationCityId);
       packageData.append('description', formData.description);
 
-      // Append termsAndConditions as an array
       formData.termsAndConditions
         .filter((term) => term.trim())
-        .forEach((term, index) => {
-          packageData.append(`termsAndConditions[${index}]`, term);
+        .forEach((term) => {
+          packageData.append('termsAndConditions[]', term);
         });
 
-      // Append photos
       selectedPhotos.forEach((photo) => {
         packageData.append('photos', photo);
       });
 
-      // Log FormData for debugging
-      console.log('Request Data to Backend:');
-      for (const [key, value] of packageData.entries()) {
-        console.log(`${key}:`, value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value);
+      if (editingPackage && deleteImageKeys.length > 0) {
+        deleteImageKeys.forEach((key) => {
+          packageData.append('deleteImageKeys[]', key);
+        });
       }
 
       if (editingPackage) {
-        // Edit existing package
         const updatedPackage = await editTourPackage(editingPackage.id, packageData);
         setPackages((prev) =>
           prev.map((pkg) =>
@@ -234,9 +226,9 @@ const TourPackagesManagement = () => {
                   destinationCountryId: formData.destinationCountryId,
                   destinationCityId: formData.destinationCityId,
                   description: formData.description,
-                  termsAndConditions: formData.termsAndConditions.filter((term) => term.trim()),
-                  photos: photoPreviewUrls, // Temporary, adjust if backend returns URLs
-                  // Include names for display purposes (not sent to backend)
+                  terms: formData.termsAndConditions.filter((term) => term.trim()),
+                  photos: updatedPackage.photos || [],
+                  photoUrls: updatedPackage.photoUrls || [],
                   sourceCountryName: sourceCountry?.name || '',
                   sourceCityName: sourceCity?.name || '',
                   destinationCountryName: destCountry?.name || '',
@@ -246,21 +238,20 @@ const TourPackagesManagement = () => {
           )
         );
       } else {
-        // Add new package
         const newPackage = await addTourPackage(packageData);
         setPackages((prev) => [
           ...prev,
           {
-            id: newPackage.id, // Assuming backend returns the new package with an ID
+            id: newPackage.id,
             title: formData.title,
             sourceCountryId: formData.sourceCountryId,
             sourceCityId: formData.sourceCityId,
             destinationCountryId: formData.destinationCountryId,
             destinationCityId: formData.destinationCityId,
             description: formData.description,
-            termsAndConditions: formData.termsAndConditions.filter((term) => term.trim()),
-            photos: photoPreviewUrls, // Temporary, adjust if backend returns URLs
-            // Include names for display purposes (not sent to backend)
+            terms: formData.termsAndConditions.filter((term) => term.trim()),
+            photos: newPackage.photos || [],
+            photoUrls: newPackage.photoUrls || [],
             sourceCountryName: sourceCountry?.name || '',
             sourceCityName: sourceCity?.name || '',
             destinationCountryName: destCountry?.name || '',
@@ -280,7 +271,6 @@ const TourPackagesManagement = () => {
     }
   };
 
-  // Handle edit
   const handleEdit = async (pkg) => {
     setLoading(true);
     try {
@@ -288,8 +278,6 @@ const TourPackagesManagement = () => {
         getCitiesByCountryId(pkg.sourceCountryId),
         getCitiesByCountryId(pkg.destinationCountryId),
       ]);
-      console.log('Edit Source Cities:', sourceCitiesData);
-      console.log('Edit Destination Cities:', destCitiesData);
       setSourceCities(Array.isArray(sourceCitiesData) ? sourceCitiesData : []);
       setDestinationCities(Array.isArray(destCitiesData) ? destCitiesData : []);
       setFormData({
@@ -299,10 +287,11 @@ const TourPackagesManagement = () => {
         destinationCountryId: pkg.destinationCountryId,
         destinationCityId: pkg.destinationCityId,
         description: pkg.description,
-        termsAndConditions: pkg.termsAndConditions.length > 0 ? pkg.termsAndConditions : [''],
+        termsAndConditions: pkg.terms?.length > 0 ? pkg.terms : [''],
       });
-      setPhotoPreviewUrls(pkg.photos || []);
-      setSelectedPhotos([]); // Reset selected photos for edit
+      setPhotoPreviewUrls(pkg.photoUrls || []);
+      setSelectedPhotos([]);
+      setDeleteImageKeys([]);
       setEditingPackage(pkg);
       setShowAddForm(true);
       setErrors({});
@@ -314,13 +303,15 @@ const TourPackagesManagement = () => {
     }
   };
 
-  // Handle delete
   const handleDelete = async (id) => {
     setLoading(true);
     try {
       await deleteTourPackage(id);
       setPackages((prev) => prev.filter((pkg) => pkg.id !== id));
       setDeleteConfirm(null);
+      if (packages.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
     } catch (error) {
       console.error('Error deleting package:', error);
       setErrors({ delete: 'Failed to delete package. Please try again.' });
@@ -329,10 +320,15 @@ const TourPackagesManagement = () => {
     }
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -357,7 +353,6 @@ const TourPackagesManagement = () => {
           </div>
         </div>
 
-        {/* Error Message for Initial Data Fetch */}
         {errors.fetch && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-8 flex items-center">
             <AlertTriangle className="w-5 h-5 mr-2" />
@@ -365,7 +360,6 @@ const TourPackagesManagement = () => {
           </div>
         )}
 
-        {/* Add/Edit Form */}
         {showAddForm && (
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-8 transform transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
@@ -387,7 +381,6 @@ const TourPackagesManagement = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
-                {/* Title */}
                 <div>
                   <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
                     Package Title *
@@ -405,7 +398,6 @@ const TourPackagesManagement = () => {
                   {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
                 </div>
 
-                {/* Source Location */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="sourceCountryId" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -463,7 +455,6 @@ const TourPackagesManagement = () => {
                   </div>
                 </div>
 
-                {/* Destination Location */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="destinationCountryId" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -521,7 +512,6 @@ const TourPackagesManagement = () => {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div>
                   <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
                     Description *
@@ -539,7 +529,6 @@ const TourPackagesManagement = () => {
                   {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
                 </div>
 
-                {/* Terms and Conditions */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Terms and Conditions *
@@ -580,7 +569,6 @@ const TourPackagesManagement = () => {
                   </div>
                 </div>
 
-                {/* Photo Upload */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     <Camera className="inline w-4 h-4 mr-1" />
@@ -619,12 +607,10 @@ const TourPackagesManagement = () => {
                   )}
                 </div>
 
-                {/* Error Message */}
                 {errors.submit && (
                   <div className="text-red-500 text-sm">{errors.submit}</div>
                 )}
 
-                {/* Submit Button */}
                 <div className="flex gap-4 pt-4">
                   <button
                     type="submit"
@@ -651,7 +637,6 @@ const TourPackagesManagement = () => {
           </div>
         )}
 
-        {/* Packages Table */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="p-6 sm:p-8 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-gray-800">Tour Packages ({packages.length})</h2>
@@ -670,84 +655,104 @@ const TourPackagesManagement = () => {
               <p className="text-gray-600">Start by adding your first tour package.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Title</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Source</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Destination</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Photos</th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {packages.map((pkg) => (
-                    <tr key={pkg.id} className="hover:bg-gray-50 transition-colors duration-200">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">#{pkg.id}</td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{pkg.title}</div>
-                        <div className="text-sm text-gray-600 max-w-xs truncate">{pkg.description}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-                          {pkg.sourceCityName}, {pkg.sourceCountryName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-1 text-gray-400" />
-                          {pkg.destinationCityName}, {pkg.destinationCountryName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex -space-x-2">
-                          {pkg.photoUrls?.slice(0, 3).map((photo, index) => (
-                            <img
-                              key={index}
-                              src={photo}
-                              alt={`Package ${pkg.id} photo ${index + 1}`}
-                              className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                            />
-                          ))}
-                          {pkg.photos?.length > 3 && (
-                            <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
-                              +{pkg.photos.length - 3}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleEdit(pkg)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                            aria-label={`Edit package ${pkg.title}`}
-                            disabled={loading}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(pkg)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                            aria-label={`Delete package ${pkg.title}`}
-                            disabled={loading}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Source</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Destination</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Photos</th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {packages.map((pkg) => (
+                      <tr key={pkg.id} className="hover:bg-gray-50 transition-colors duration-200">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">#{pkg.id}</td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">{pkg.title}</div>
+                          <div className="text-sm text-gray-600 max-w-xs truncate">{pkg.description}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                            {pkg.sourceCityName}, {pkg.sourceCountryName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <MapPin className="w-4 h-4 mr-1 text-gray-400" />
+                            {pkg.destinationCityName}, {pkg.destinationCountryName}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex -space-x-2">
+                            {pkg.photoUrls?.slice(0, 3).map((photo, index) => (
+                              <img
+                                key={index}
+                                src={photo}
+                                alt={`Package ${pkg.id} photo ${index + 1}`}
+                                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
+                              />
+                            ))}
+                            {pkg.photos?.length > 3 && (
+                              <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600">
+                                +{pkg.photos.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEdit(pkg)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                              aria-label={`Edit package ${pkg.title}`}
+                              disabled={loading}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(pkg)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                              aria-label={`Delete package ${pkg.title}`}
+                              disabled={loading}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-6 border-t border-gray-200 flex justify-between items-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || loading}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || loading}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </>
           )}
         </div>
 
-        {/* Delete Confirmation Modal */}
         {deleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-100">

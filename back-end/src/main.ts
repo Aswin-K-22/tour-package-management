@@ -26,12 +26,14 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-const { countryRoutes, authRoutes, cityRoutes, packageRoutes } = composeApp();
+const { countryRoutes, authRoutes, cityRoutes, packageRoutes, scheduleRoutes, enquiryRoutes } = composeApp();
 
 app.use('/country', countryRoutes.router);
 app.use('/auth', authRoutes.router);
 app.use('/city', cityRoutes.router);
 app.use('/tour-package', packageRoutes.router);
+app.use('/schedule', scheduleRoutes.router);
+app.use('/enquiry', enquiryRoutes.router); 
 
 
 

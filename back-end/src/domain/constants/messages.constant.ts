@@ -13,6 +13,10 @@ export const MESSAGES = {
   COUNTRY_UPDATED: 'Country updated successfully',
   COUNTRY_DELETED: 'Country deleted successfully',
 
+
+   ENQUIRIES_FETCHED: 'Enquiries fetched successfully',
+  ENQUIRY_CREATED: 'Enquiry submitted successfully',
+
     CITY_ADDED: 'City created successfully',
   CITY_UPDATED: 'City updated successfully',
   CITY_DELETED: 'City deleted successfully',
@@ -20,5 +24,12 @@ export const MESSAGES = {
   PACKAGE_UPDATED:'PACKAGE_UPDATED',
 
   PACKAGE_ADDED : 'Package created successfully',
-  PACKAGE_DELETED :'PACKAGE_DELETED'
+  PACKAGE_DELETED :'PACKAGE_DELETED',
+
+
+  SCHEDULE_ADDED: 'Schedule added successfully', 
+
+  SCHEDULE_UPDATED: 'Schedule updated successfully',
+  SCHEDULE_DELETED: 'Schedule deleted successfully',
+
 } as const;

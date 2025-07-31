@@ -13,7 +13,7 @@ import { DeleteCountryUseCase } from "./application/usecases/country/DeleteCount
 import { GetAllCountriesAlphabeticalUseCase } from "./application/usecases/country/GetAllCountriesAlphabeticalUseCase";
 import { GetAllCountriesUseCase } from "./application/usecases/country/GetAllCountriesUseCase";
 import { UpdateCountryUseCase } from "./application/usecases/country/UpdateCountryUseCase";
-import { CreatePackageUseCase } from '@/application/usecases/packages/CreatePackageUseCase';
+import { CreatePackageUseCase } from '@/application/usecases/packages/CreatePackageUseCasePhoto';
 import { DeletePackageUseCase } from "./application/usecases/packages/DeletePackageUseCase";
 import { GetAllPackagesUseCase } from "./application/usecases/packages/GetAllPackagesUseCase";
 import { UpdatePackageUseCase } from "./application/usecases/packages/UpdatePackageUseCase";
@@ -37,6 +37,19 @@ import { AuthRoutes } from "./presentation/routes/auth-router";
 import { CityRoutes } from "./presentation/routes/city-routes";
 import { CountryRoutes } from "./presentation/routes/country-routes";
 import { PackageRoutes } from "./presentation/routes/package-routes";
+import { CreateScheduleUseCase } from "./application/usecases/shedule/CreateScheduleUseCase";
+import { UpdateScheduleUseCase } from "./application/usecases/shedule/UpdateScheduleUseCase";
+import { DeleteScheduleUseCase } from "./application/usecases/shedule/DeleteScheduleUseCase";
+import { GetAllSchedulesUseCase } from "./application/usecases/shedule/GetAllSchedulesUseCase";
+import { GetScheduleByIdUseCase } from "./application/usecases/shedule/GetScheduleByIdUseCase";
+import { ScheduleController } from "./presentation/controllers/shedule-controller";
+import { ScheduleRoutes } from "./presentation/routes/schedule-route";
+import { GetAllPackagesFullUseCase } from "./application/usecases/packages/GetAllPackagesFullUseCase";
+import { GetPackageByIdUseCase } from "./application/usecases/packages/GetPackageByIdUseCase";
+import { CreateEnquiryUseCase } from "./application/usecases/enquiry/createEnquiryUseCase";
+import { GetAllEnquiriesUseCase } from "./application/usecases/enquiry/getEnquiriesUseCase";
+import { EnquiryController } from "./presentation/controllers/enquiry-controller";
+import { EnquiryRoutes } from "./presentation/routes/enquiry-routes";
 
 
 
@@ -80,12 +93,26 @@ const loginUserUseCase = new LoginUserUseCase(adminRepository,passwordHasher);
 const getUserUseCase = new GetUserUseCase(adminRepository)
 
 
+const createScheduleUseCase = new CreateScheduleUseCase(scheduleRepository);
+const updateScheduleUseCase = new UpdateScheduleUseCase(scheduleRepository, s3Service);
+const deleteScheduleUseCase = new DeleteScheduleUseCase(scheduleRepository, s3Service);
+const getAllSchedulesUseCase = new GetAllSchedulesUseCase(scheduleRepository, packageRepository);
 
+const getScheduleByIdUseCase = new GetScheduleByIdUseCase(scheduleRepository,packageRepository);
+
+const  getPackageByIdUseCase = new GetPackageByIdUseCase(packageRepository,cityRepository,countryRepository,scheduleRepository);
  const createPackageUseCase = new CreatePackageUseCase(packageRepository);
 const getAllPackagesUseCase = new GetAllPackagesUseCase(packageRepository,cityRepository,countryRepository);
 const updatePackageUseCase = new UpdatePackageUseCase(packageRepository,s3Service);
 const deletePackageUseCase = new DeletePackageUseCase(packageRepository,s3Service);
+const getAllPackagesFullUseCase = new GetAllPackagesFullUseCase(packageRepository,cityRepository,countryRepository);
 //middleware
+
+const createEnquiryUseCase = new CreateEnquiryUseCase(enquiryRepository);
+const getAllEnquiriesUseCase = new GetAllEnquiriesUseCase(enquiryRepository,packageRepository,scheduleRepository);
+
+
+
     const  authMiddleware  = new  AuthMiddleware (adminRepository,tokenService);
 
 
@@ -112,10 +139,24 @@ const packageController = new PackageController(
   createPackageUseCase,
   getAllPackagesUseCase,
   updatePackageUseCase,
-  deletePackageUseCase
+  deletePackageUseCase,
+  getAllPackagesFullUseCase,
+  getPackageByIdUseCase
+);
+
+const scheduleController = new ScheduleController(
+  createScheduleUseCase,
+  updateScheduleUseCase,
+  deleteScheduleUseCase,
+  getAllSchedulesUseCase,
+  getScheduleByIdUseCase
 );
 
 
+
+
+
+const enquiryController = new EnquiryController(createEnquiryUseCase, getAllEnquiriesUseCase);
 
 
  const authController = new AuthController(createUserUseCase,loginUserUseCase,tokenService,getUserUseCase);
@@ -127,6 +168,9 @@ const packageController = new PackageController(
     const authRoutes  = new AuthRoutes(authController,authMiddleware);
     const cityRoutes = new CityRoutes(cityController, authMiddleware);
         const packageRoutes = new PackageRoutes(packageController, authMiddleware);
+        const scheduleRoutes = new ScheduleRoutes(scheduleController, authMiddleware);
+
+const enquiryRoutes = new EnquiryRoutes(enquiryController);
 
 
 return {
@@ -134,6 +178,8 @@ return {
   authRoutes,
   cityRoutes,
   packageRoutes,
+  scheduleRoutes,
+  enquiryRoutes,
 };
 
 }

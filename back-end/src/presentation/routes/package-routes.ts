@@ -18,10 +18,13 @@ export class PackageRoutes {
   private setupRoutes(): void {
     console.log('Setting up tour package routes');
 
+
+    
+
     // Get paginated list of packages (auth required)
     this.router.get(
       '/packages',
-      this.authMiddleware.adminAuth.bind(this.authMiddleware),
+      //this.authMiddleware.adminAuth.bind(this.authMiddleware),
       this.packageController.getAll.bind(this.packageController)
     );
 
@@ -41,12 +44,12 @@ export class PackageRoutes {
   this.packageController.update.bind(this.packageController)
 );
 
-    // this.router.put(
-    //   '/:id',
-    //   this.authMiddleware.adminAuth.bind(this.authMiddleware),
-    //   upload.array('photos', 10),
-    //   this.packageController.update.bind(this.packageController)
-    // );
+    this.router.get(
+  '/all',
+  this.authMiddleware.adminAuth.bind(this.authMiddleware),
+  this.packageController.getAllPackages.bind(this.packageController)
+);
+
 
     // Delete a package by ID
 this.router.delete(
@@ -54,5 +57,14 @@ this.router.delete(
   this.authMiddleware.adminAuth.bind(this.authMiddleware),
   this.packageController.delete.bind(this.packageController)
 );
+
+// Get a single package by ID
+this.router.get(
+  '/get/:id',
+  this.packageController.getById.bind(this.packageController)
+);
+
+
+
   }
 }
